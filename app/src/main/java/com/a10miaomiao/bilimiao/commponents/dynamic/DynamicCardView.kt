@@ -89,7 +89,10 @@ fun MiaoUI.dynamicStatView(
                 val iconSize = dip(14)
                 +imageView {
                     setImageResource(R.drawable.ic_comment_unlike)
-                    imageTintList = ColorStateList.valueOf(config.foregroundAlpha45Color)
+                    androidx.core.widget.ImageViewCompat.setImageTintList(
+                        this,
+                        ColorStateList.valueOf(config.foregroundAlpha45Color)
+                    )
 //                    _tag = index
 //                    miaoEffect(isLike) {
 //                        imageTintList = ColorStateList.valueOf(
@@ -122,7 +125,10 @@ fun MiaoUI.dynamicStatView(
                 }..lParams(dip(150), wrapContent)
                 +imageView {
                     setImageResource(R.drawable.ic_comment_reply)
-                    imageTintList = ColorStateList.valueOf(config.foregroundAlpha45Color)
+                    androidx.core.widget.ImageViewCompat.setImageTintList(
+                        this,
+                        ColorStateList.valueOf(config.foregroundAlpha45Color)
+                    )
                 }..lParams(iconSize, iconSize) {
                     rightMargin = dip(4)
                 }

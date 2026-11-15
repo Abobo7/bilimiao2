@@ -5,7 +5,6 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.preference.PreferenceManager
-import android.util.Rational
 import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
@@ -271,14 +270,8 @@ class PlayerController(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     val height = playerSourceInfo?.height
                     val width = playerSourceInfo?.width
-                    // 设置宽高比例值
-                    var aspectRatio = if (height == null || width == null) {
-                        Rational(16, 9)
-                    } else {
-                        Rational(width, height)
-                    }
                     try {
-                        delegate.picInPicHelper?.enterPictureInPictureMode(aspectRatio)
+                        delegate.picInPicHelper?.enterPictureInPictureMode(width, height)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         PopTip.show("此设备不支持小窗播放")

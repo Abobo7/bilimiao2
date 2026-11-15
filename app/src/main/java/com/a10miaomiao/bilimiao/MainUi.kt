@@ -58,13 +58,13 @@ class MainUi(override val ctx: Context) : Ui, BottomSheetUi {
     val mAppBar = view<AppBarView>{
         setOnClickListener {  }
         backgroundColor = config.blockBackgroundColor
-        elevation = dip(20).toFloat()
+        androidx.core.view.ViewCompat.setElevation(this, dip(20).toFloat())
     }
 
 
     val mPlayerLayout = frameLayout {
         backgroundColor = 0xFF000000.toInt()
-        elevation = dip(20).toFloat()
+        androidx.core.view.ViewCompat.setElevation(this, dip(20).toFloat())
 
         val videoPlayerView = PlayerService.selfInstance?.videoPlayerView?.apply {
             (parent as? ViewGroup)?.removeAllViews()
@@ -87,7 +87,7 @@ class MainUi(override val ctx: Context) : Ui, BottomSheetUi {
     }
 
     val mBottomSheetLayout = frameLayout {
-        elevation = dip(20).toFloat()
+        androidx.core.view.ViewCompat.setElevation(this, dip(20).toFloat())
         setOnClickListener { }
 //        translationY = dip(-200f)
 
@@ -123,7 +123,7 @@ class MainUi(override val ctx: Context) : Ui, BottomSheetUi {
 
     override var bottomSheetMaskView = view<View> {
         setBackgroundResource(R.color.black)
-        elevation = dip(20).toFloat()
+        androidx.core.view.ViewCompat.setElevation(this, dip(20).toFloat())
         alpha = 0f
         visibility = View.GONE
     }

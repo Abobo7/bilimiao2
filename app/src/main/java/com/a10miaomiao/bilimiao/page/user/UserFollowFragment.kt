@@ -99,8 +99,7 @@ class UserFollowFragment : Fragment(), DIAware, MyPage {
     }
 
     private val mWebViewClient = object : WebViewClient() {
-        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            var url = request.url.toString()
+        override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
             val compile = Pattern.compile(".*://space.bilibili.com/(\\d+)")
             val matcher = compile.matcher(url)
             if (matcher.find()) {
@@ -110,15 +109,6 @@ class UserFollowFragment : Fragment(), DIAware, MyPage {
                     .navigate(UserFragment.actionId, args)
                 return true
             }
-//            if (night){
-//                url += if("?" in url){
-//                    "&night=1"
-//                }else{
-//                    "?night=1"
-//                }
-//                view.loadUrl(url)
-//                return true
-//            }
             return false
         }
 
@@ -141,7 +131,9 @@ class UserFollowFragment : Fragment(), DIAware, MyPage {
         super.onViewCreated(view, savedInstanceState)
         if (mWebView == null) {
             val webView = view.findViewById<WebView>(ID_webView)
-            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                com.a10miaomiao.bilimiao.page.auth.Api21WebCookieHelper.enableThirdPartyCookies(webView)
+            }
             webView.webViewClient = mWebViewClient
             webView.webChromeClient = mWebChromeClient
             webView.settings.apply {

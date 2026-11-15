@@ -84,15 +84,8 @@ class H5LoginFragment : Fragment(), DIAware, MyPage {
     private val mWebViewClient = object : WebViewClient() {
 
         override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-//            return BilibiliRouter.gotoUrl(context!!, url)
             DebugMiao.log("shouldOverrideUrlLoading", url)
             return false
-        }
-
-        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            var url = request.url.toString()
-            DebugMiao.log("shouldOverrideUrlLoading2", url)
-            return this.shouldOverrideUrlLoading(view, url)
         }
 
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -124,16 +117,14 @@ class H5LoginFragment : Fragment(), DIAware, MyPage {
         }
 
         override fun onReceivedError(
-            view: WebView,
-            request: WebResourceRequest,
-            error: WebResourceError?
+            view: WebView?,
+            errorCode: Int,
+            description: String?,
+            failingUrl: String?
         ) {
-            super.onReceivedError(view, request, error)
-            request?.url?.toString()?.let { url ->
+            super.onReceivedError(view, errorCode, description, failingUrl)
+            failingUrl?.let { url ->
                 DebugMiao.log("onReceivedError", url)
-//                if (url.contains("access_key=") && url.contains("mid=")) {
-//                    viewModel.resolveUrl(view, url)
-//                }
             }
         }
 
@@ -155,7 +146,9 @@ class H5LoginFragment : Fragment(), DIAware, MyPage {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val webView = view.findViewById<WebView>(ID_webView)
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            Api21WebCookieHelper.enableThirdPartyCookies(webView)
+        }
         webView.webViewClient = mWebViewClient
         webView.webChromeClient = mWebChromeClient
         webView.settings.apply {

@@ -1,16 +1,18 @@
 package com.a10miaomiao.bilimiao.comm.network
 
-import android.content.pm.ApplicationInfo
 import android.util.Log
 import android.webkit.CookieManager
 import com.a10miaomiao.bilimiao.comm.BilimiaoCommApp
 import com.a10miaomiao.bilimiao.comm.utils.DebugMiao
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.isActive
-import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
 import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -18,9 +20,8 @@ import kotlin.coroutines.suspendCoroutine
 
 class MiaoHttp(var url: String? = null) {
     private val TAG = "MiaoHttp"
-    private val cookieManager = CookieManager.getInstance()
 
-    var client = OkHttpClient()
+    var client: OkHttpClient = KitKatTlsHelper.defaultOkHttpClient
     val requestBuilder = Request.Builder()
     var headers = mapOf<String, String>()
     var method = GET
@@ -28,28 +29,44 @@ class MiaoHttp(var url: String? = null) {
     var body: RequestBody? = null
     var formBody: Map<String, String?>? = null
 
-    private fun buildRequest(): Request {
-        for (key in headers.keys) {
-            requestBuilder.addHeader(key, headers[key]!!)
+    private fun getCookieSafely(targetUrl: String?): String {
+        if (targetUrl.isNullOrBlank()) return ""
+        return try {
+            BilimiaoCommApp.commApp.ensureCookieSyncInitialized()
+            CookieManager.getInstance().getCookie(targetUrl) ?: ""
+        } catch (_: Throwable) {
+            ""
         }
-        requestBuilder.addHeader("user-agent", ApiHelper.USER_AGENT)
-        requestBuilder.addHeader("referer",ApiHelper.REFERER)
+    }
+
+    private fun buildRequest(): Request {
+        requestBuilder.addHeader("User-Agent", ApiHelper.USER_AGENT)
+        requestBuilder.addHeader("Referer", ApiHelper.REFERER)
+        requestBuilder.addHeader("buvid", BilimiaoCommApp.commApp.getBilibiliBuvid())
 
         if (url?.let { "bilibili.com" in it } == true) {
             requestBuilder.addHeader("env", "prod")
-            requestBuilder.addHeader("app-key", "android")
+            requestBuilder.addHeader("app-key", "android_hd")
             requestBuilder.addHeader("x-bili-aurora-eid", "UlMFQVcABlAH")
             requestBuilder.addHeader("x-bili-aurora-zone", "sh001")
-            BilimiaoCommApp.commApp.loginInfo?.token_info?.let{
+            BilimiaoCommApp.commApp.loginInfo?.token_info?.let {
                 requestBuilder.addHeader("x-bili-mid", it.mid.toString())
             }
         }
 
-        requestBuilder.addHeader("cookie", (cookieManager.getCookie(url) ?: ""))
+        val cookie = getCookieSafely(url)
+        if (cookie.isNotBlank()) {
+            requestBuilder.addHeader("Cookie", cookie)
+        }
+        for (key in headers.keys) {
+            requestBuilder.header(key, headers[key]!!)
+        }
+
         if (body == null && formBody != null) {
             val bodyStr = ApiHelper.urlencode(formBody!!)
-            body = bodyStr.toRequestBody(
-                "application/x-www-form-urlencoded".toMediaType()
+            body = RequestBody.create(
+                MediaType.parse("application/x-www-form-urlencoded"),
+                bodyStr
             )
         }
         if (DebugMiao.isDebug) {
@@ -60,10 +77,9 @@ class MiaoHttp(var url: String? = null) {
             }
             Log.d(TAG, "------END-$method------")
         }
-        val req = requestBuilder.method(method, body)
+        return requestBuilder.method(method, body)
             .url(url!!)
             .build()
-        return req
     }
 
     fun call(): Response {
@@ -71,13 +87,14 @@ class MiaoHttp(var url: String? = null) {
         return client.newCall(req).execute()
     }
 
-    suspend fun awaitCall(): Response{
+    suspend fun awaitCall(): Response {
         return suspendCoroutine { continuation ->
             val req = buildRequest()
             client.newCall(req).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     continuation.resumeWithException(e)
                 }
+
                 override fun onResponse(call: Call, response: Response) {
                     continuation.resume(response)
                 }
@@ -95,28 +112,18 @@ class MiaoHttp(var url: String? = null) {
         return call()
     }
 
-//    fun rxCall() = Observable.create<Response> {
-//        var response = call()
-//        if (response.isSuccessful) {
-//            it.onNext(response)
-//            it.onComplete()
-//        } else {
-//            it.onError(Exception("MiaoHttp: error"))
-//        }
-//    }
-
     companion object {
         fun request(url: String? = null, init: (MiaoHttp.() -> Unit)? = null) = MiaoHttp(url).apply {
             init?.invoke(this)
         }
 
         inline fun <reified T> gsonConverterFactory(): (response: Response) -> T = { response ->
-            val jsonStr = response.body!!.string()
+            val jsonStr = response.body()!!.string()
             Gson().fromJson(jsonStr, object : TypeToken<T>() {}.type)
         }
 
         inline fun <reified T> Response.gson(isDebug: Boolean = false): T {
-            val jsonStr = this.body!!.string()
+            val jsonStr = this.body()!!.string()
             if (isDebug) {
                 DebugMiao.log(jsonStr)
             }
@@ -125,6 +132,5 @@ class MiaoHttp(var url: String? = null) {
 
         const val GET = "GET"
         const val POST = "POST"
-
     }
 }

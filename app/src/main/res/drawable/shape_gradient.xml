@@ -23,7 +23,7 @@
 
     <gradient
         android:startColor="#00000000"
-        android:endColor="?defaultBackgroundColor"
+        android:endColor="@color/kitkat_window_bg"
         android:angle="0"
         />
 

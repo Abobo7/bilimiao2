@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import cn.a10miaomiao.download.DownloadInfo
@@ -16,8 +17,7 @@ class DownloadNotify(val activity: AppCompatActivity) {
 
     init {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val mChannel = NotificationChannel(channelId, "DownloadControl", NotificationManager.IMPORTANCE_DEFAULT)
-            manager.createNotificationChannel(mChannel)
+            Api26ChannelHelper.createChannel(manager, channelId)
         }
     }
 
@@ -37,4 +37,11 @@ class DownloadNotify(val activity: AppCompatActivity) {
         manager.cancel(notificationID)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    private object Api26ChannelHelper {
+        fun createChannel(manager: NotificationManager, channelId: String) {
+            val mChannel = NotificationChannel(channelId, "DownloadControl", NotificationManager.IMPORTANCE_DEFAULT)
+            manager.createNotificationChannel(mChannel)
+        }
+    }
 }

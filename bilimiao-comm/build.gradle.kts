@@ -1,76 +1,59 @@
 import com.google.protobuf.gradle.*
-import cn.a10miaomiao.bilimiao.build.*
 
 plugins {
     id("com.android.library")
-    id("kotlin-android")
-    id("kotlin-parcelize")
-    id("com.google.protobuf") // proto
-    id("bilimiao-build")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.parcelize")
+    id("com.google.protobuf")
 }
 
 android {
-    compileSdk = 32
+    namespace = "com.a10miaomiao.bilimiao.comm"
+    compileSdk = 35
 
     defaultConfig {
-        minSdk = 21
-        targetSdk = 32
-        version = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        minSdk = 19
+        multiDexEnabled = true
         consumerProguardFiles("consumer-rules.pro")
     }
 
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-               "proguard-rules.pro"
-            )
-        }
-    }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+
     kotlinOptions {
         jvmTarget = "1.8"
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     sourceSets["main"].proto {
-        srcDir("src/main/proto") // 模块下的proto文件夹
+        srcDir("src/main/proto")
         include("**/*.proto")
     }
 }
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:3.12.0"  // 相当于proto编译器
+        artifact = "com.google.protobuf:protoc:3.12.0"
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.33.0" // Grpc单独的编译器
-        }
-        id("javalite") {
-            artifact = "com.google.protobuf:protoc-gen-javalite:3.0.0"
-            // 官方推荐的方法，Android 适用javalite,相较于java插件，生成的代码更轻量化
+            artifact = "io.grpc:protoc-gen-grpc-java:1.33.0"
         }
     }
     generateProtoTasks {
-        all().forEach {
-            it.builtins {
-                if (contains(java)) {
-                    named("java") {
-                        option("lite")
-                    }
-                } else {
-                    create("java") {
-                        option("lite")
-                    }
+        all().forEach { task ->
+            task.builtins {
+                maybeCreate("java").apply {
+                    option("lite")
                 }
             }
-            it.plugins {
+            task.plugins {
                 id("grpc") {
                     option("lite")
                 }
@@ -80,32 +63,27 @@ protobuf {
 }
 
 dependencies {
-    implementation(Libraries.core)
-    implementation(Libraries.appcompat)
-    implementation(Libraries.material)
-    implementation(Libraries.lifecycle)
-    implementation(Libraries.lifecycleViewModel)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
-    implementation(Libraries.kotlinxCoroutinesAndroid)
-    implementation(Libraries.kodeinDi)
-    implementation(Libraries.glide)
-    implementation(Libraries.dialogX)
-    implementation(Libraries.dialogXMaterialYou)
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.6.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
 
-    implementation(Libraries.gson)
-    implementation(Libraries.okhttp3)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation("org.kodein.di:kodein-di-framework-android-x:7.12.0")
+    implementation("com.github.bumptech.glide:glide:4.13.2")
 
-    implementation(Libraries.grpcProtobuf)
-    implementation(Libraries.grpcStub)
+    implementation("org.conscrypt:conscrypt-android:2.5.3")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.okhttp3:okhttp:3.12.13")
 
+    api("io.grpc:grpc-protobuf-lite:1.33.0")
+    api("io.grpc:grpc-stub:1.33.0")
     implementation("javax.annotation:javax.annotation-api:1.2")
-
-    // 极验验证
-    implementation(Libraries.sensebot)
 
     implementation(project(":DanmakuFlameMaster"))
 
-    testImplementation(Libraries.junit)
-    androidTestImplementation(Libraries.androidxJunit)
-    androidTestImplementation(Libraries.espresso)
+    testImplementation("junit:junit:4.13.2")
 }

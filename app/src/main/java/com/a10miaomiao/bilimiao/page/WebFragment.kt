@@ -115,8 +115,7 @@ class WebFragment : Fragment(), DIAware, MyPage {
     }
 
     private val mWebViewClient = object : WebViewClient() {
-        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            var url = request.url.toString()
+        override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
             val re = BiliNavigation.navigationTo(view, url)
             if (re) {
                 return true
@@ -195,7 +194,9 @@ class WebFragment : Fragment(), DIAware, MyPage {
         mRootView = view.findViewById<View>(ID_root)
         if (mWebView == null) {
             val webView = view.findViewById<WebView>(ID_webView)
-            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                com.a10miaomiao.bilimiao.page.auth.Api21WebCookieHelper.enableThirdPartyCookies(webView)
+            }
             webView.webViewClient = mWebViewClient
             webView.webChromeClient = mWebChromeClient
             webView.settings.apply {

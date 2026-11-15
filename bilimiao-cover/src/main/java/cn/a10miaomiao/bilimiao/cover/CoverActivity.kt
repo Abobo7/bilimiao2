@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Outline
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -12,7 +11,6 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewOutlineProvider
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -75,7 +73,7 @@ class CoverActivity : AppCompatActivity() {
             if (extras.containsKey(Intent.EXTRA_TEXT)) {
                 val text = extras.getString(Intent.EXTRA_TEXT)!!
                 val urlInfo = BiliUrlMatcher.findIDByUrl(text)
-                val type = urlInfo[0].toUpperCase()
+                val type = urlInfo[0].uppercase()
                 val id = urlInfo[1]
                 if (type == "未知类型") {
                     val textList = text.split(" ")
@@ -91,7 +89,7 @@ class CoverActivity : AppCompatActivity() {
                 }
                 Unit
             } else if (extras.containsKey("id") && extras.containsKey("type")) {
-                val type = extras.getString("type")!!.toUpperCase()
+                val type = extras.getString("type")!!.uppercase()
                 val id = extras.getString("id")!!
                 viewModel.setConfig(type, id)
             } else {
@@ -119,15 +117,9 @@ class CoverActivity : AppCompatActivity() {
             override fun onTransitionTrigger(motionLayout: MotionLayout, p1: Int, p2: Boolean, p3: Float) {
             }
         })
-        // 设置圆角
+        // 设置圆角（API 19 安全）
         val roundCorner = dip(36)
-        mMainContainerLl.clipToOutline = true // 开启裁剪
-        mMainContainerLl.outlineProvider = object : ViewOutlineProvider() {
-            override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height + roundCorner,
-                    roundCorner.toFloat())
-            }
-        }
+        ViewStyle.topRoundRect(roundCorner)(mMainContainerLl)
         ViewStyle.roundRect(dip(24))(mBtnBox1)
         ViewStyle.roundRect(dip(24))(mBtnBox2)
         ViewStyle.roundRect(dip(10))(mCoverIv)

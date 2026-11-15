@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.provider.Settings
 import android.util.DisplayMetrics
 import android.view.View
-import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.annotation.CallSuper
 import androidx.annotation.RequiresApi
@@ -50,7 +49,6 @@ import com.a10miaomiao.bilimiao.store.*
 import com.a10miaomiao.bilimiao.widget.comm.*
 import com.a10miaomiao.bilimiao.widget.comm.behavior.AppBarBehavior
 import com.a10miaomiao.bilimiao.widget.comm.behavior.PlayerBehavior
-import com.baidu.mobstat.StatService
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.kodein.di.DI
 import org.kodein.di.DIAware
@@ -98,19 +96,18 @@ class MainActivity
         store.onCreate(savedInstanceState)
         ui.root.showPlayer = basePlayerDelegate.isPlaying()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            ui.root.rootWindowInsets?.let {
-                setWindowInsets(it)
-            }
-            ui.root.setOnApplyWindowInsetsListener { v, insets ->
-                setWindowInsets(insets)
-                insets
-            }
-            ui.root.onPlayerChanged = {
-                statusBarHelper.isLightStatusBar = !it || (ui.root.orientation == ScaffoldView.HORIZONTAL && !ui.root.fullScreenPlayer)
-                setWindowInsets(ui.root.rootWindowInsets)
+            Api23InsetsHelper.install(this, ui, statusBarHelper) { l, t, r, b ->
+                setWindowInsets(l, t, r, b)
             }
         } else {
             setWindowInsetsAndroidL()
+            ui.root.post {
+                setWindowInsetsAndroidL()
+            }
+            ui.root.onPlayerChanged = {
+                statusBarHelper.isLightStatusBar = !it || (ui.root.orientation == ScaffoldView.HORIZONTAL && !ui.root.fullScreenPlayer)
+                setWindowInsetsAndroidL()
+            }
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -145,10 +142,6 @@ class MainActivity
 //            val res = BiliApiService.authApi.refreshToken(refreshToken).awaitCall()
 //            DebugMiao.log("oauth2", res.body()?.string())
 //        }
-
-        // 百度统计
-        StatService.setAuthorizedState(this, false)
-        StatService.start(this)
 
         navController.handleDeepLink(intent)
 
@@ -279,16 +272,59 @@ class MainActivity
         window.decorView.getWindowVisibleDisplayFrame(rectangle)
         windowManager.defaultDisplay.getRealMetrics(displayMetrics)
         val top = statusBarHelper.getStatusBarHeight()
-        val bottom = displayMetrics.heightPixels - rectangle.bottom - rectangle.top
-        val right = displayMetrics.widthPixels - rectangle.right
+        val maxNavBar = (96 * resources.displayMetrics.density).toInt()
+        val rawBottom = if (rectangle.height() > 0) {
+            displayMetrics.heightPixels - rectangle.bottom
+        } else {
+            0
+        }
+        val rawRight = if (rectangle.width() > 0) {
+            displayMetrics.widthPixels - rectangle.right
+        } else {
+            0
+        }
+        val bottom = if (rawBottom in 1..maxNavBar) rawBottom else 0
+        val right = if (rawRight in 1..maxNavBar) rawRight else 0
         setWindowInsets(0, top, right, bottom)
     }
-    fun setWindowInsets (insets: WindowInsets) {
-        val left = insets.systemWindowInsetLeft
-        val top = insets.systemWindowInsetTop
-        val right = insets.stableInsetRight
-        val bottom = insets.systemWindowInsetBottom
-        setWindowInsets(left, top, right, bottom)
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private object Api23InsetsHelper {
+        fun install(
+            activity: MainActivity,
+            ui: MainUi,
+            statusBarHelper: StatusBarHelper,
+            applyInsets: (Int, Int, Int, Int) -> Unit,
+        ) {
+            ui.root.rootWindowInsets?.let { insets ->
+                applyInsets(
+                    insets.systemWindowInsetLeft,
+                    insets.systemWindowInsetTop,
+                    insets.stableInsetRight,
+                    insets.systemWindowInsetBottom
+                )
+            }
+            ui.root.setOnApplyWindowInsetsListener { _, insets ->
+                applyInsets(
+                    insets.systemWindowInsetLeft,
+                    insets.systemWindowInsetTop,
+                    insets.stableInsetRight,
+                    insets.systemWindowInsetBottom
+                )
+                insets
+            }
+            ui.root.onPlayerChanged = {
+                statusBarHelper.isLightStatusBar = !it || (ui.root.orientation == ScaffoldView.HORIZONTAL && !ui.root.fullScreenPlayer)
+                ui.root.rootWindowInsets?.let { insets ->
+                    applyInsets(
+                        insets.systemWindowInsetLeft,
+                        insets.systemWindowInsetTop,
+                        insets.stableInsetRight,
+                        insets.systemWindowInsetBottom
+                    )
+                }
+            }
+        }
     }
     fun setWindowInsets (left: Int, top: Int, right: Int, bottom: Int) {
         val windowStore = store.windowStore
@@ -354,17 +390,11 @@ class MainActivity
     override fun onResume() {
         super.onResume()
         basePlayerDelegate.onResume()
-
-        // 百度移动统计埋点
-        StatService.onResume(this)
     }
 
     override fun onPause() {
         super.onPause()
         basePlayerDelegate.onPause()
-
-        // 百度移动统计埋点
-        StatService.onPause(this)
     }
 
     override fun onDestroy() {

@@ -51,7 +51,7 @@ class BangumiPlayerSource(
             val dash = res.dash
             if (dash != null) {
                 it.duration = dash.duration * 1000L
-                val dashSource = DashSource(res.quality, dash, uposHost)
+                val dashSource = DashSource(res.quality, dash, uposHost, preferredCodec)
                 val dashVideo = dashSource.getDashVideo()!!
                 it.height = dashVideo.height
                 it.width = dashVideo.width
@@ -122,7 +122,7 @@ class BangumiPlayerSource(
         }
         val res = BiliApiService.playerAPI.getDanmakuList(id)
             .awaitCall()
-        val body = res.body
+        val body = res.body()
         return if (body == null) {
             null
         } else {

@@ -1,4 +1,15 @@
-## bilimiao
+## bilimiao（Android 4.4.4 / API 19 二开适配版）
+
+基于上游 [10miaomiao/bilimiao2](https://github.com/10miaomiao/bilimiao2) 进行二次开发，完整向下兼容 **Android 4.4.4 (KitKat / API 19 / Dalvik 1.6.0)** 老旧平板与手机设备（已在小米平板 1 `mocha` / Tegra K1 / MIUI 7.5 真机实测验证）。
+
+### Android 4.4.4 (API 19) 核心改造项
+* **纯原生视图架构与完整功能保留**：基于原生 `Splitties` + `MiaoBinding` 视图层，移除最低要求 API 21 的 Jetpack Compose 模块，使用原生控件重写扫码/密码/Cookie 登录、UPOS 节点与区域限制代理设置、时光姬时间线设置，保留平板横屏双栏、应用内小窗、弹幕与视频播放等全部核心体验。
+* **Dalvik 多 DEX 主包闭包与 Java 8+ 脱糖**：启用 `desugar_jdk_libs` 与 `d8 --min-api 19 --main-dex-rules`，生成兼容 Dalvik 1.6.0 的 `035` 格式多 DEX 分包。
+* **内置现代 TLS 1.2/1.3 与根证书信任链**：集成 `Conscrypt (BoringSSL)` 与 `OkHttp 3.12.13`，内置 `ISRG Root X1`、`DigiCert Global Root G2/G3`、`GlobalSign Root R3/R6` 根证书，并为 `Media3 (1.3.1)` 实现自定义 `KitKatOkHttpDataSource` 视频流通道。
+* **上游 2.5.3 接口回迁与硬件解码优化**：同步上游 `2.5.3` 版 B 站 gRPC（gzip 帧解压）与签名搜索接口；默认优先选择 `AVC / H.264` 视频轨，避免早期 SoC（如 Tegra K1）硬解 HEVC/AV1 绿屏或黑屏。
+* **API 19 / MIUI 7.5 专项兼容修复**：补齐 `MediaButtonReceiver` 广播组件与 `MediaSessionCompat` 显式绑定、通知栏进度节流（消除 MIUI `system_server` 堆内存暴涨）、XML `?attr` 资源分流与内联矢量动画预光栅化。
+
+## 上游项目说明
 bilimiao2.2
 [下载体验](https://10miaomiao.cn/project/1)
 

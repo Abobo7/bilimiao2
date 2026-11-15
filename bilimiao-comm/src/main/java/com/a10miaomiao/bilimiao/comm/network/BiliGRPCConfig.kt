@@ -2,7 +2,6 @@ package com.a10miaomiao.bilimiao.comm.network
 
 import android.os.Build
 import android.util.Base64
-import android.webkit.WebSettings
 import bilibili.metadata.MetadataOuterClass
 import bilibili.metadata.device.DeviceOuterClass
 import bilibili.metadata.fawkes.Fawkes
@@ -13,65 +12,23 @@ import com.a10miaomiao.bilimiao.comm.BilimiaoCommApp
 
 object BiliGRPCConfig {
 
-    /**
-     * 频道.
-     */
-    val channel = "bilibili140";
+    val channel = "bilibili140"
+    val networkType = 2
+    val networkTF = 0
+    val networkOid = "46007"
 
-    /**
-     * 网络状况.
-     */
-    val networkType = 2;
-
-    /**
-     * 未知.
-     */
-    val networkTF = 0;
-
-    /**
-     * 未知.
-     */
-    val networkOid = "46007";
-
-    /**
-     * 未知.
-     */
-//    val buvid = "XZFD48CFF1E68E637D0DF11A562468A8DC314";
     val buvid get() = BilimiaoCommApp.commApp.getBilibiliBuvid()
 
-    /**
-     * 应用类型.
-     */
-    val mobileApp = "android_hd";
+    val mobileApp = "android_hd"
+    val platform = "android"
+    val envorienment = "prod"
 
-    /**
-     * 移动平台.
-     */
-    val platform = "android_hd";
+    // 5 为安卓平板 APP
+    var appId = 5
 
-    /**
-     * 产品环境.
-     */
-    val envorienment = "prod";
+    val region = "CN"
+    val language = "zh"
 
-    /**
-     * 应用Id.
-     */
-    var appId = 1;
-
-    /**
-     * 国家或地区.
-     */
-    val region = "CN";
-
-    /**
-     * 语言.
-     */
-    val language = "zh";
-
-    /**
-     * 获取客户端在Fawkes系统中的信息标头.
-     */
     fun getFawkesreqBin(): String {
         val msg = Fawkes.FawkesReq.newBuilder()
             .setAppkey(mobileApp)
@@ -80,9 +37,6 @@ object BiliGRPCConfig {
         return toBase64(msg.toByteArray())
     }
 
-    /**
-     * 获取元数据标头.
-     */
     fun getMetadataBin(accessToken: String): String {
         val msg = MetadataOuterClass.Metadata.newBuilder()
             .setAccessKey(accessToken)
@@ -95,9 +49,6 @@ object BiliGRPCConfig {
         return toBase64(msg.toByteArray())
     }
 
-    /**
-     * 获取设备标头.
-     */
     fun getDeviceBin(): String {
         val msg = DeviceOuterClass.Device.newBuilder()
             .setAppId(appId)
@@ -106,16 +57,13 @@ object BiliGRPCConfig {
             .setChannel(channel)
             .setBuvid(buvid)
             .setPlatform(platform)
-            .setBrand(Build.BRAND)
-            .setModel(Build.MODEL)
-            .setOsver(Build.VERSION.RELEASE)
+            .setBrand(Build.BRAND ?: "Xiaomi")
+            .setModel(Build.MODEL ?: "MI PAD")
+            .setOsver(Build.VERSION.RELEASE ?: "4.4.4")
             .build()
         return toBase64(msg.toByteArray())
     }
 
-    /**
-     * 获取网络标头.
-     */
     fun getNetworkBin(): String {
         val msg = NetworkOuterClass.Network.newBuilder()
             .setType(NetworkOuterClass.NetworkType.WIFI)
@@ -124,18 +72,12 @@ object BiliGRPCConfig {
         return toBase64(msg.toByteArray())
     }
 
-    /**
-     * 获取限制标头.
-     */
     fun getRestrictionBin(): String {
         val msg = RestrictionOuterClass.Restriction.newBuilder()
             .build()
         return toBase64(msg.toByteArray())
     }
 
-    /**
-     * 获取本地化标头.
-     */
     fun getLocaleBin(): String {
         val cLocale = LocaleOuterClass.LocaleIds.newBuilder()
             .setLanguage(language)
@@ -153,35 +95,9 @@ object BiliGRPCConfig {
     }
 
     fun getSystemUserAgent(): String {
-        var userAgent = ""
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            try {
-                userAgent = WebSettings.getDefaultUserAgent(BilimiaoCommApp.commApp.app)
-            } catch (e: Exception) {
-                userAgent = System.getProperty("http.agent")
-            }
-        } else {
-            userAgent = System.getProperty("http.agent")
-        }
-        //调整编码，防止中文出错
-        val sb = StringBuffer()
-        var i = 0
-        val length = userAgent.length
-        while (i < length) {
-            val c = userAgent[i]
-            if (c <= '\u001f' || c >= '\u007f') {
-                sb.append(String.format("\\u%04x", c.toInt()))
-            } else {
-                sb.append(c)
-            }
-            i++
-        }
-        return sb.toString()
+        return System.getProperty("http.agent") ?: "Mozilla/5.0"
     }
 
-    /**
-     * 将数据转换为Base64字符串.
-     */
     fun toBase64(data: ByteArray): String {
         return Base64.encodeToString(data, Base64.NO_PADDING or Base64.NO_WRAP)
     }

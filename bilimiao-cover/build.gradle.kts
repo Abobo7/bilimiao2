@@ -1,60 +1,50 @@
-import cn.a10miaomiao.bilimiao.build.*
-
 plugins {
     id("com.android.library")
-    id("kotlin-android")
-    id("kotlin-parcelize")
-    id("bilimiao-build")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.parcelize")
 }
 
 android {
-    compileSdk = 30
+    namespace = "cn.a10miaomiao.bilimiao.cover"
+    compileSdk = 35
 
     defaultConfig {
-        minSdk = 21
-        targetSdk = 33
-        version = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        minSdk = 19
+        multiDexEnabled = true
         consumerProguardFiles("consumer-rules.pro")
     }
 
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+
     kotlinOptions {
         jvmTarget = "1.8"
     }
 }
 
 dependencies {
-    implementation(Libraries.core)
-    implementation(Libraries.appcompat)
-    implementation(Libraries.material)
-    implementation(Libraries.lifecycleViewModel)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
-    implementation(Libraries.kotlinxCoroutinesAndroid)
-    implementation(Libraries.glide)
-    implementation(Libraries.gson)
-    implementation(Libraries.okhttp3)
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.6.1")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
 
-    // 图片预览工具
-    implementationMojito()
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation("com.github.bumptech.glide:glide:4.13.2")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.okhttp3:okhttp:3.12.13")
+
+    val mojitoVersion = "1.8.7"
+    implementation("com.github.mikaelzero.mojito:mojito:$mojitoVersion")
+    implementation("com.github.mikaelzero.mojito:SketchImageViewLoader:$mojitoVersion")
+    implementation("com.github.mikaelzero.mojito:GlideImageLoader:$mojitoVersion")
 
     implementation(project(":bilimiao-comm"))
 
-    testImplementation(Libraries.junit)
-    androidTestImplementation(Libraries.androidxJunit)
-    androidTestImplementation(Libraries.espresso)
-
+    testImplementation("junit:junit:4.13.2")
 }

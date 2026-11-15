@@ -60,15 +60,17 @@ class PicInPicHelper(
         }
     }
 
-    fun enterPictureInPictureMode(aspectRatio: Rational) {
-        // 判断Android版本是否大于等于8.0
+    fun enterPictureInPictureMode(width: Int?, height: Int?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // 设置画中画窗口的宽高比例
+            val aspectRatio = if (height == null || width == null || height <= 0 || width <= 0) {
+                Rational(16, 9)
+            } else {
+                Rational(width, height)
+            }
             builder.setAspectRatio(aspectRatio)
             builder.setActions(getActions(videoPlayer.currentState))
-            // 进入画中画模式，注意enterPictureInPictureMode是Android8.0之后新增的方法
-            activity.enterPictureInPictureMode(builder.build());
-        };
+            activity.enterPictureInPictureMode(builder.build())
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

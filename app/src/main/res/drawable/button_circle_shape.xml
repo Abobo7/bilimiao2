@@ -6,7 +6,7 @@
                     <!--边框角度-->
                     <corners android:radius="10dip" />
                     <!--外边框颜色-->
-                    <solid android:color="?colorPrimary" />
+                    <solid android:color="@color/theme_color_primary" />
                 </shape>
             </item>
             <item android:state_pressed="false">
@@ -14,7 +14,7 @@
                     <!--边框角度-->
                     <corners android:radius="10dip" />
                     <!--外边框颜色-->
-                    <solid android:color="?blockBackground" />
+                    <solid android:color="@color/kitkat_block_bg" />
                 </shape>
             </item>
         </selector>
@@ -29,7 +29,7 @@
             <!--边框角度-->
             <corners android:radius="10dip" />
             <!--外边框颜色，这个为内部颜色-->
-            <solid android:color="?attr/blockBackground" />
+            <solid android:color="@color/kitkat_block_bg" />
         </shape>
     </item>
 </layer-list>

@@ -1,10 +1,8 @@
 pluginManagement {
-    includeBuild("bilimiao-build")
     repositories {
-        gradlePluginPortal()
         google()
+        gradlePluginPortal()
         mavenCentral()
-        maven("https://dl.bintray.com/kotlin/kotlin-eap")
     }
 }
 dependencyResolutionManagement {
@@ -13,12 +11,11 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://jitpack.io")
-        maven("https://maven.aliyun.com/repository/public")
     }
 }
 rootProject.name = "bilimiao"
 include(":app")
 include(":miao-binding", ":miao-binding-android")
-include(":bilimiao-comm", ":bilimiao-cover", "bilimiao-appwidget", "bilimiao-compose")
+include(":bilimiao-comm", ":bilimiao-cover")
 include(":DanmakuFlameMaster")
 include(":download")

@@ -22,12 +22,6 @@ class AutoMirrorDrawable(drawable: Drawable) : DrawableWrapper(drawable) {
         }
     }
 
-    override fun onLayoutDirectionChanged(layoutDirection: Int): Boolean {
-        super.onLayoutDirectionChanged(layoutDirection)
-
-        return true
-    }
-
     override fun isAutoMirrored(): Boolean = true
 
     private fun needMirroring(): Boolean = DrawableCompat.getLayoutDirection(this) == View.LAYOUT_DIRECTION_RTL
@@ -54,11 +48,6 @@ class AutoMirrorDrawable(drawable: Drawable) : DrawableWrapper(drawable) {
         override fun newDrawable(res: Resources?): Drawable =
             AutoMirrorDrawable(constantState.newDrawable(res))
 
-        override fun newDrawable(res: Resources?, theme: Resources.Theme?): Drawable =
-            AutoMirrorDrawable(constantState.newDrawable(res, theme))
-
         override fun getChangingConfigurations(): Int = constantState.changingConfigurations
-
-        override fun canApplyTheme(): Boolean = constantState.canApplyTheme()
     }
 }

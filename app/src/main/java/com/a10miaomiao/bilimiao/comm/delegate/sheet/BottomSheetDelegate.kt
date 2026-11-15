@@ -9,7 +9,6 @@ import androidx.fragment.app.FragmentOnAttachListener
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.fragment.NavHostFragment
-import cn.a10miaomiao.bilimiao.compose.ComposeFragment
 import com.a10miaomiao.bilimiao.MainNavGraph
 import com.a10miaomiao.bilimiao.R
 import com.a10miaomiao.bilimiao.comm.mypage.MyPage
@@ -108,10 +107,7 @@ class BottomSheetDelegate(
         if (behavior?.state != BottomSheetBehavior.STATE_HIDDEN) {
             val currentDestinationId = navBottomSheetController.currentDestination?.id
             if (currentDestinationId == MainNavGraph.dest.template) {
-                behavior?.state =  BottomSheetBehavior.STATE_HIDDEN
-            } else if (currentDestinationId == MainNavGraph.dest.compose) {
-                (navBottomSheetFragment.childFragmentManager.fragments.last()
-                        as? ComposeFragment)?.onBackPressed()
+                behavior?.state = BottomSheetBehavior.STATE_HIDDEN
             } else {
                 navBottomSheetController.popBackStack()
             }

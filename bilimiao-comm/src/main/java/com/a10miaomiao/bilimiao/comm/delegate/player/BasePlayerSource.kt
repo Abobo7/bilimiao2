@@ -18,4 +18,5 @@ abstract class BasePlayerSource() {
 
     var proxyServer: ProxyServerInfo? = null
     var uposHost: String = ""
+    var preferredCodec: String = "avc"
 }

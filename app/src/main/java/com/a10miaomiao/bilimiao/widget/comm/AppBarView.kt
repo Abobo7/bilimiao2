@@ -133,8 +133,7 @@ class AppBarView @JvmOverloads constructor(
     private fun newProp (): PropInfo {
         val prop = PropInfo()
         if (canBack) {
-//            prop.onNavigationClick = onBackClick
-            prop.navigationIcon = resources.getDrawable(R.drawable.ic_back_24dp)
+            prop.navigationIcon = androidx.appcompat.content.res.AppCompatResources.getDrawable(context, R.drawable.ic_back_24dp)
         }
         return prop
     }

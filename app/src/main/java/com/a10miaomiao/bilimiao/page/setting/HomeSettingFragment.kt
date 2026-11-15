@@ -89,8 +89,8 @@ class HomeSettingFragment : Fragment(), DIAware, MyPage
         prefs.unregisterOnSharedPreferenceChangeListener(this)
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
-        if ("home" in key) {
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+        if (key != null && "home" in key) {
             homeSettingVersion++
         }
     }

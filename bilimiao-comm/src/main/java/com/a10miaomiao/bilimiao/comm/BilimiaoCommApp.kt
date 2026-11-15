@@ -2,15 +2,17 @@ package com.a10miaomiao.bilimiao.comm
 
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.webkit.CookieManager
+import android.webkit.CookieSyncManager
+import androidx.annotation.RequiresApi
 import com.a10miaomiao.bilimiao.comm.entity.auth.LoginInfo
 import com.a10miaomiao.bilimiao.comm.network.ApiHelper
+import com.a10miaomiao.bilimiao.comm.network.KitKatTlsHelper
 import com.a10miaomiao.bilimiao.comm.utils.AESUtil
-import com.a10miaomiao.bilimiao.comm.utils.DebugMiao
 import com.a10miaomiao.bilimiao.comm.utils.MiaoEncryptDecrypt
 import com.google.gson.Gson
-import com.kongzue.dialogx.DialogX
-import com.kongzue.dialogxmaterialyou.style.MaterialYouStyle
+import com.kongzue.dialogx.dialogs.PopTip
 import java.io.File
 
 class BilimiaoCommApp(
@@ -31,22 +33,71 @@ class BilimiaoCommApp(
 
     fun onCreate() {
         commApp = this
+        KitKatTlsHelper.install()
+        ensureCookieSyncInitialized()
         readAuthInfo()
 
-        DialogX.init(app)
-        DialogX.globalStyle = MaterialYouStyle.style()
+        PopTip.init(app)
+    }
+
+    @Suppress("DEPRECATION")
+    fun ensureCookieSyncInitialized() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                CookieSyncManager.createInstance(app)
+            } catch (_: Throwable) {
+            }
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun clearAllCookiesCompat(cookieManager: CookieManager) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Api21CookieHelper.clearCookies(cookieManager)
+        } else {
+            cookieManager.removeSessionCookie()
+            cookieManager.removeAllCookie()
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun flushCookiesCompat(cookieManager: CookieManager) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Api21CookieHelper.flush(cookieManager)
+        } else {
+            try {
+                CookieSyncManager.getInstance().sync()
+            } catch (_: Throwable) {
+            }
+        }
     }
 
     fun setCookie(cookieInfo: LoginInfo.CookieInfo) {
+        ensureCookieSyncInitialized()
         val cookieManager = CookieManager.getInstance()
-        cookieManager.removeSessionCookies(null)//移除
-        cookieManager.removeAllCookies(null)
+        cookieManager.setAcceptCookie(true)
+        clearAllCookiesCompat(cookieManager)
         cookieInfo.domains.forEach { domain ->
             cookieInfo.cookies.forEach { cookie ->
                 cookieManager.setCookie(domain, cookie.getValue(domain))
             }
         }
-        cookieManager.flush()
+        flushCookiesCompat(cookieManager)
+    }
+
+    fun setRawCookieString(rawCookie: String) {
+        ensureCookieSyncInitialized()
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true)
+        clearAllCookiesCompat(cookieManager)
+        val domains = listOf(".bilibili.com", ".biligame.com", ".bigfun.cn", ".bigfunapp.cn")
+        val pairs = rawCookie.split(";").map { it.trim() }.filter { it.contains("=") }
+        for (domain in domains) {
+            for (pair in pairs) {
+                cookieManager.setCookie(domain, "$pair; Domain=$domain; Path=/")
+            }
+        }
+        flushCookiesCompat(cookieManager)
     }
 
     private fun getMiaoEncryptDecrypt(): MiaoEncryptDecrypt {
@@ -70,6 +121,7 @@ class BilimiaoCommApp(
             val miaoED = getMiaoEncryptDecrypt()
             val secretKey = AESUtil.getKey(key, app)
             val file = File(authFilePath)
+            if (!file.exists()) return null
             val cipher = file.readBytes()
             val jsonByteArray = miaoED.decrypt(AESUtil.decrypt(cipher, secretKey))
             val jsonStr = String(jsonByteArray)
@@ -85,13 +137,15 @@ class BilimiaoCommApp(
     fun deleteAuth() {
         val file = File(authFilePath)
         file.delete()
-        val cookieManager = CookieManager.getInstance()
-        cookieManager.removeSessionCookies(null)//移除
-        cookieManager.removeAllCookies(null)
-        cookieManager.flush()
+        try {
+            ensureCookieSyncInitialized()
+            val cookieManager = CookieManager.getInstance()
+            clearAllCookiesCompat(cookieManager)
+            flushCookiesCompat(cookieManager)
+        } catch (_: Throwable) {
+        }
         this.loginInfo = null
     }
-
 
     fun getBilibiliBuvid(): String {
         if (_bilibiliBuvid.isNotBlank()) {
@@ -107,5 +161,15 @@ class BilimiaoCommApp(
         return buvid
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private object Api21CookieHelper {
+        fun clearCookies(cookieManager: CookieManager) {
+            cookieManager.removeSessionCookies(null)
+            cookieManager.removeAllCookies(null)
+        }
 
+        fun flush(cookieManager: CookieManager) {
+            cookieManager.flush()
+        }
+    }
 }

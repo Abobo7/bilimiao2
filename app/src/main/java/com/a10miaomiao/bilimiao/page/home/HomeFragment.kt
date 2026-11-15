@@ -12,7 +12,6 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.navigation.Navigation
 import androidx.navigation.findNavController
-import cn.a10miaomiao.bilimiao.compose.PageRoute
 import cn.a10miaomiao.miao.binding.android.view.*
 import cn.a10miaomiao.miao.binding.android.widget._text
 import cn.a10miaomiao.miao.binding.miaoEffect
@@ -31,7 +30,9 @@ import com.a10miaomiao.bilimiao.comm.utils.MiaoEncryptDecrypt
 import com.a10miaomiao.bilimiao.commponents.comment.VideoCommentViewContent
 import com.a10miaomiao.bilimiao.config.ViewStyle
 import com.a10miaomiao.bilimiao.config.config
+import com.a10miaomiao.bilimiao.page.auth.AuthLoginFragment
 import com.a10miaomiao.bilimiao.page.region.RegionFragment
+import com.a10miaomiao.bilimiao.page.time.TimeSettingFragment
 import com.a10miaomiao.bilimiao.page.user.UserFragment
 import com.a10miaomiao.bilimiao.page.video.comment.ReplyDetailParam
 import com.a10miaomiao.bilimiao.store.WindowStore
@@ -97,8 +98,7 @@ class HomeFragment : Fragment(), DIAware {
         } else {
             // 跳转登录
             val nav = Navigation.findNavController(it)
-            val url = "bilimiao://auth/login"
-            nav.navigateToCompose(url)
+            nav.navigate(AuthLoginFragment.actionId)
         }
     }
 
@@ -106,8 +106,7 @@ class HomeFragment : Fragment(), DIAware {
         if (viewModel.userStore.state.info == null) {
             // 跳转登录
             val nav = Navigation.findNavController(it)
-            val url = "bilimiao://auth/login"
-            nav.navigateToCompose(url)
+            nav.navigate(AuthLoginFragment.actionId)
             true
         } else {
             false
@@ -116,8 +115,7 @@ class HomeFragment : Fragment(), DIAware {
 
     val handleTimeSettingClick = View.OnClickListener {
         val nav = requireActivity().findNavController(com.a10miaomiao.bilimiao.R.id.nav_bottom_sheet_fragment)
-        val url = "bilimiao://time/setting"
-        nav.navigateToCompose(url)
+        nav.navigate(TimeSettingFragment.actionId)
     }
 
     val handleAdClick = View.OnClickListener {

@@ -685,9 +685,11 @@ class VideoInfoFragment : Fragment(), DIAware, MyPage {
                                     views {
 
                                         +imageView {
-                                            imageTintList =
-                                                ColorStateList.valueOf(config.foregroundAlpha45Color)
                                             setImageResource(R.drawable.ic_info_views)
+                                            androidx.core.widget.ImageViewCompat.setImageTintList(
+                                                this,
+                                                ColorStateList.valueOf(config.foregroundAlpha45Color)
+                                            )
                                         }..lParams(dip(14), dip(14)) {
                                             gravity = Gravity.CENTER
                                         }
@@ -702,9 +704,11 @@ class VideoInfoFragment : Fragment(), DIAware, MyPage {
                                         }
 
                                         +imageView {
-                                            imageTintList =
-                                                ColorStateList.valueOf(config.foregroundAlpha45Color)
                                             setImageResource(R.drawable.ic_info_danmakus)
+                                            androidx.core.widget.ImageViewCompat.setImageTintList(
+                                                this,
+                                                ColorStateList.valueOf(config.foregroundAlpha45Color)
+                                            )
                                         }..lParams(dip(14), dip(14)) {
                                             gravity = Gravity.CENTER
                                         }

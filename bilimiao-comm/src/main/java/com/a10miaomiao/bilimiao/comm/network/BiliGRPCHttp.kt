@@ -1,13 +1,19 @@
 package com.a10miaomiao.bilimiao.comm.network
 
-import android.os.Build
 import com.a10miaomiao.bilimiao.comm.BilimiaoCommApp
-import com.a10miaomiao.bilimiao.comm.utils.DebugMiao
 import io.grpc.MethodDescriptor
-import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.Response
+import java.io.ByteArrayInputStream
+import java.io.DataInputStream
 import java.io.IOException
+import java.io.InputStream
+import java.util.zip.GZIPInputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -19,7 +25,8 @@ class BiliGRPCHttp<ReqT, RespT> internal constructor(
 
     var baseUrl = ApiHelper.GRPC_BASE
 
-    private val client = OkHttpClient()
+    private val client: OkHttpClient
+        get() = KitKatTlsHelper.defaultOkHttpClient
 
     var needToken = true
 
@@ -27,7 +34,7 @@ class BiliGRPCHttp<ReqT, RespT> internal constructor(
         val token = BilimiaoCommApp.commApp.loginInfo?.token_info?.access_token ?: ""
         if (needToken && token.isNotBlank()) {
             addHeader(BiliHeaders.Authorization, BiliHeaders.Identify + " " + token)
-            BilimiaoCommApp.commApp.loginInfo?.token_info?.let{
+            BilimiaoCommApp.commApp.loginInfo?.token_info?.let {
                 addHeader(BiliHeaders.BiliMid, it.mid.toString())
             }
         }
@@ -42,7 +49,6 @@ class BiliGRPCHttp<ReqT, RespT> internal constructor(
         addHeader(BiliHeaders.GRPCAcceptEncodingKey, BiliHeaders.GRPCAcceptEncodingValue)
         addHeader(BiliHeaders.GRPCTimeOutKey, BiliHeaders.GRPCTimeOutValue)
         addHeader(BiliHeaders.Envoriment, BiliGRPCConfig.envorienment)
-        addHeader(BiliHeaders.TransferEncodingKey, BiliHeaders.TransferEncodingValue)
         addHeader(BiliHeaders.TEKey, BiliHeaders.TEValue)
         addHeader(BiliHeaders.Buvid, BilimiaoCommApp.commApp.getBilibiliBuvid())
         return this
@@ -51,15 +57,21 @@ class BiliGRPCHttp<ReqT, RespT> internal constructor(
     private fun buildRequest(): Request {
         val url = baseUrl + grpcMethod.fullMethodName.replace("interfaces", "interface")
         val messageBytes = grpcMethod.streamRequest(reqMessage).readBytes()
-        // 校验用?第五位为数组长度
-        val stateBytes = byteArrayOf(0, 0, 0, 0, messageBytes.size.toByte())
-        // 合并两个字节数组
+        val len = messageBytes.size
+        val stateBytes = byteArrayOf(
+            0,
+            ((len ushr 24) and 0xFF).toByte(),
+            ((len ushr 16) and 0xFF).toByte(),
+            ((len ushr 8) and 0xFF).toByte(),
+            (len and 0xFF).toByte()
+        )
         val bodyBytes = ByteArray(stateBytes.size + messageBytes.size)
         System.arraycopy(stateBytes, 0, bodyBytes, 0, stateBytes.size)
         System.arraycopy(messageBytes, 0, bodyBytes, stateBytes.size, messageBytes.size)
 
-        val body = bodyBytes.toRequestBody(
-            BiliHeaders.GRPCContentType.toMediaType()
+        val body = RequestBody.create(
+            MediaType.parse(BiliHeaders.GRPCContentType),
+            bodyBytes
         )
         return Request.Builder()
             .url(url)
@@ -69,9 +81,27 @@ class BiliGRPCHttp<ReqT, RespT> internal constructor(
     }
 
     private fun parseResponse(res: Response): RespT {
-        val inputStream = res.body!!.byteStream()
-        inputStream.skip(5L)
-        return grpcMethod.parseResponse(inputStream)
+        val respBody = res.body() ?: throw IOException("Empty gRPC response body (HTTP ${res.code()})")
+        respBody.use { body ->
+            val rawBytes = body.bytes()
+            if (rawBytes.size < 5) {
+                val grpcMsg = res.header("grpc-message") ?: "HTTP ${res.code()}"
+                throw IOException("Invalid gRPC response (${rawBytes.size}B): $grpcMsg")
+            }
+            val compressedFlag = rawBytes[0].toInt() and 0xFF
+            val msgLen = ((rawBytes[1].toInt() and 0xFF) shl 24) or
+                ((rawBytes[2].toInt() and 0xFF) shl 16) or
+                ((rawBytes[3].toInt() and 0xFF) shl 8) or
+                (rawBytes[4].toInt() and 0xFF)
+            val payloadLen = if (msgLen in 0..(rawBytes.size - 5)) msgLen else (rawBytes.size - 5)
+            var payloadStream: InputStream = ByteArrayInputStream(rawBytes, 5, payloadLen)
+            val isGzip = compressedFlag == 1 &&
+                (res.header(BiliHeaders.GRPCEncoding)?.equals(BiliHeaders.GRPCEncodingGZIP, ignoreCase = true) != false)
+            if (isGzip || (payloadLen >= 2 && rawBytes[5] == 0x1f.toByte() && rawBytes[6] == 0x8b.toByte())) {
+                payloadStream = GZIPInputStream(payloadStream)
+            }
+            return grpcMethod.parseResponse(payloadStream)
+        }
     }
 
     fun call(): RespT {
@@ -80,13 +110,14 @@ class BiliGRPCHttp<ReqT, RespT> internal constructor(
         return parseResponse(res)
     }
 
-    suspend fun awaitCall(): RespT{
+    suspend fun awaitCall(): RespT {
         return suspendCoroutine { continuation ->
             val req = buildRequest()
             client.newCall(req).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     continuation.resumeWithException(e)
                 }
+
                 override fun onResponse(call: Call, response: Response) {
                     try {
                         continuation.resume(parseResponse(response))
@@ -110,4 +141,3 @@ fun <ReqT, RespT> MethodDescriptor<ReqT, RespT>.request(
         biliGRPCHttpBuilder?.invoke(this)
     }
 }
-

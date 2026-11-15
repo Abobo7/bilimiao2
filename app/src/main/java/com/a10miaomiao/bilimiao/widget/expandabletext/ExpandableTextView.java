@@ -274,7 +274,7 @@ public class ExpandableTextView extends AppCompatTextView {
             }
 
             TypedValue defaultColorTypedValue = new TypedValue();
-            context.getTheme().resolveAttribute(android.R.attr.colorPrimary, defaultColorTypedValue, true);
+            context.getTheme().resolveAttribute(androidx.appcompat.R.attr.colorPrimary, defaultColorTypedValue, true);
             int defaultColor = context.getResources().getColor(defaultColorTypedValue.resourceId);
 
             mExpandTextColor = a.getColor(R.styleable.ExpandableTextView_ep_expand_color, defaultColor);

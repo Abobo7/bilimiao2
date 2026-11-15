@@ -4,12 +4,11 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.*
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.FragmentNavigatorDestinationBuilder
-import cn.a10miaomiao.bilimiao.compose.ComposeFragment
-import com.a10miaomiao.bilimiao.comm.navigation.ComposeFragmentNavigatorBuilder
 import com.a10miaomiao.bilimiao.comm.navigation.FragmentNavigatorBuilder
 import com.a10miaomiao.bilimiao.comm.utils.DebugMiao
 import com.a10miaomiao.bilimiao.page.MainFragment
 import com.a10miaomiao.bilimiao.page.WebFragment
+import com.a10miaomiao.bilimiao.page.auth.AuthLoginFragment
 import com.a10miaomiao.bilimiao.page.auth.H5LoginFragment
 import com.a10miaomiao.bilimiao.page.bangumi.BangumiDetailFragment
 import com.a10miaomiao.bilimiao.page.bangumi.BangumiPagesFragment
@@ -22,8 +21,7 @@ import com.a10miaomiao.bilimiao.page.search.SearchResultFragment
 import com.a10miaomiao.bilimiao.page.search.SearchStartFragment
 import com.a10miaomiao.bilimiao.page.search.result.VideoRegionFragment
 import com.a10miaomiao.bilimiao.page.setting.*
-import com.a10miaomiao.bilimiao.template.SettingFragment
-import com.a10miaomiao.bilimiao.template.TemplateFragment
+import com.a10miaomiao.bilimiao.page.time.TimeSettingFragment
 import com.a10miaomiao.bilimiao.page.user.*
 import com.a10miaomiao.bilimiao.page.user.bangumi.MyBangumiFragment
 import com.a10miaomiao.bilimiao.page.user.bangumi.UserBangumiFragment
@@ -31,17 +29,16 @@ import com.a10miaomiao.bilimiao.page.user.favourite.UserFavouriteDetailFragment
 import com.a10miaomiao.bilimiao.page.user.favourite.UserFavouriteListFragment
 import com.a10miaomiao.bilimiao.page.video.*
 import com.a10miaomiao.bilimiao.page.video.comment.*
+import com.a10miaomiao.bilimiao.template.SettingFragment
+import com.a10miaomiao.bilimiao.template.TemplateFragment
 import kotlin.reflect.KClass
 
-
 object MainNavGraph {
-    // Counter for id's. First ID will be 1.
     private var id_counter = 100
 
     object dest {
         val main = id_counter++
         val template = id_counter++
-        val compose = id_counter++
         val web = id_counter++
     }
 
@@ -59,10 +56,10 @@ object MainNavGraph {
             addFragment(MainFragment::class, MainFragment.Companion, dest.main)
             addFragment(TemplateFragment::class, TemplateFragment.Companion, dest.template)
             addFragment(WebFragment::class, WebFragment.Companion, dest.web)
-            addFragment(ComposeFragment::class, ComposeFragmentNavigatorBuilder, dest.compose)
 
             addFragment(RegionFragment::class, RegionFragment.Companion)
             addFragment(RankFragment::class, RankFragment.Companion)
+            addFragment(TimeSettingFragment::class, TimeSettingFragment.Companion)
 
             addFragment(VideoInfoFragment::class, VideoInfoFragment.Companion)
             addFragment(VideoCoinFragment::class, VideoCoinFragment.Companion)
@@ -76,6 +73,7 @@ object MainNavGraph {
             addFragment(BangumiDetailFragment::class, BangumiDetailFragment.Companion)
             addFragment(BangumiPagesFragment::class, BangumiPagesFragment.Companion)
 
+            addFragment(AuthLoginFragment::class, AuthLoginFragment.Companion)
             addFragment(H5LoginFragment::class, H5LoginFragment.Companion)
 
             addFragment(UserFragment::class, UserFragment.Companion)
@@ -102,6 +100,7 @@ object MainNavGraph {
             addFragment(SettingFragment::class, SettingFragment.Companion)
             addFragment(ThemeSettingFragment::class, ThemeSettingFragment.Companion)
             addFragment(VideoSettingFragment::class, VideoSettingFragment.Companion)
+            addFragment(ProxySettingFragment::class, ProxySettingFragment.Companion)
 
             addFragment(FilterListFragment::class, FilterListFragment.Companion)
             addFragment(FilterWordListFragment::class, FilterWordListFragment.Companion)
@@ -133,5 +132,4 @@ object MainNavGraph {
             navOptions(defaultNavOptionsBuilder)
         }
     }
-
 }

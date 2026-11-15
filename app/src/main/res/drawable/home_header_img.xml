@@ -8,8 +8,8 @@
     <item>
         <shape>
             <gradient
-                android:startColor="?blockBackground"
-                android:centerColor="?blockBackground"
+                android:startColor="@color/kitkat_block_bg"
+                android:centerColor="@color/kitkat_block_bg"
                 android:endColor="@color/transparent"
                 android:type="linear"
                 android:angle="90"

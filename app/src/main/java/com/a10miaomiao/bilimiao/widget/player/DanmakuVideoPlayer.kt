@@ -675,13 +675,13 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
     }
 
     private fun setDialogVolumeProgressBar(context: Context) {
-        val draw = context.getDrawable(R.drawable.shape_video_volume_progress)
+        val draw = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.shape_video_volume_progress)
         setDialogVolumeProgressBar(draw)
     }
 
     private fun setDialogProgressBar(context: Context) {
         setDialogProgressColor(context.config.themeColor, mDialogProgressNormalColor)
-        val draw = context.getDrawable(R.drawable.shape_video_dialog_progress)
+        val draw = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.shape_video_dialog_progress)
         setDialogProgressBar(draw)
     }
 
@@ -689,12 +689,12 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
         context: Context,
         themeColor: Int,
     ) {
-        val draw = context.getDrawable(R.drawable.layer_progress)
+        val draw = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.layer_progress)
         val bounds = mProgressBar.progressDrawable.bounds
         mProgressBar.progressDrawable = draw
         mProgressBar.progressDrawable.bounds = bounds
         mProgressBar.thumb.setColorFilter(themeColor, PorterDuff.Mode.SRC_ATOP)
-        mBottomProgressBar.progressDrawable = context.getDrawable(R.drawable.shape_bottom_progress)
+        mBottomProgressBar.progressDrawable = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.shape_bottom_progress)
 
         setDialogProgressBar(context)
         setDialogVolumeProgressBar(context)

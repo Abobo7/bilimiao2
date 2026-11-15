@@ -227,12 +227,15 @@ fun MiaoUI.videoCommentView(
                                 setImageResource(R.drawable.ic_comment_unlike)
                                 _tag = index
                                 miaoEffect(isLike) {
-                                    imageTintList = ColorStateList.valueOf(
-                                        if (it) {
-                                            config.themeColor
-                                        } else {
-                                            config.foregroundAlpha45Color
-                                        }
+                                    androidx.core.widget.ImageViewCompat.setImageTintList(
+                                        this,
+                                        ColorStateList.valueOf(
+                                            if (it) {
+                                                config.themeColor
+                                            } else {
+                                                config.foregroundAlpha45Color
+                                            }
+                                        )
                                     )
                                 }
                                 onLikeClick?.let { setOnClickListener(it) }
@@ -256,7 +259,10 @@ fun MiaoUI.videoCommentView(
                             }..lParams(dip(80), wrapContent)
                             +imageView {
                                 setImageResource(R.drawable.ic_comment_reply)
-                                imageTintList = ColorStateList.valueOf(config.foregroundAlpha45Color)
+                                androidx.core.widget.ImageViewCompat.setImageTintList(
+                                    this,
+                                    ColorStateList.valueOf(config.foregroundAlpha45Color)
+                                )
                             }..lParams(iconSize, iconSize) {
                                 rightMargin = dip(4)
                             }

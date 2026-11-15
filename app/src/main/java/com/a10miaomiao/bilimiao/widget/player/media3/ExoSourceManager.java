@@ -399,9 +399,9 @@ public class ExoSourceManager{
         if (sHttpReadTimeout > 0) {
             readTimeout = sHttpReadTimeout;
         }
-        boolean allowCrossProtocolRedirects = false;
-        if (mMapHeadData != null && mMapHeadData.size() > 0) {
-            allowCrossProtocolRedirects = "true".equals(mMapHeadData.get("allowCrossProtocolRedirects"));
+        boolean allowCrossProtocolRedirects = true;
+        if (mMapHeadData != null && mMapHeadData.size() > 0 && "false".equals(mMapHeadData.get("allowCrossProtocolRedirects"))) {
+            allowCrossProtocolRedirects = false;
         }
         DataSource.Factory dataSourceFactory = null;
         if (sExoMediaSourceInterceptListener != null) {

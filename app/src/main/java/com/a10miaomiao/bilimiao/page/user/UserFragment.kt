@@ -203,16 +203,13 @@ class UserFragment : Fragment(), DIAware, MyPage {
                         .navigate(UserFavouriteListFragment.actionId, args)
                 }
                 "attention" -> {
-//                    val args = bundleOf(
-//                        MainNavArgs.id to viewModel.id,
-//                        MainNavArgs.name to info.card.name,
-//                        MainNavArgs.type to "follow",
-//                    )
-//                    Navigation.findNavController(it)
-//                        .navigate(MainNavGraph.action.user_to_userFollow, args)
-                    val nav = it.findNavController()
-                    val url = "bilimiao://user/${viewModel.id}/follow"
-                    nav.navigateToCompose(url)
+                    val args = UserFollowFragment.createArguments(
+                        id = viewModel.id,
+                        type = "follow",
+                        name = info.card.name,
+                    )
+                    Navigation.findNavController(it)
+                        .navigate(UserFollowFragment.actionId, args)
                 }
                 "fans" -> {
                     val args = UserFollowFragment.createArguments(

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kitkat_block_bg">@color/darkBlockBackgroundColor</color>
+    <color name="kitkat_window_bg">@color/darkWindowBackgroundColor</color>
+    <color name="kitkat_fg">@color/darkForegroundColor</color>
+    <color name="kitkat_control_normal">#B3FFFFFF</color>
+</resources>

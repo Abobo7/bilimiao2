@@ -37,7 +37,7 @@ class AppBarVerticalUi(
     }
 
     val mNavigationIcon = imageView {
-        setBackgroundResource(ctx.attr(android.R.attr.selectableItemBackgroundBorderless))
+        setBackgroundResource(ctx.attr(androidx.appcompat.R.attr.selectableItemBackgroundBorderless))
     }
 
 //    val mNavigationIconLayout = frameLayout {

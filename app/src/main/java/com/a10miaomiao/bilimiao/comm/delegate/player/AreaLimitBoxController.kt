@@ -17,6 +17,7 @@ import com.a10miaomiao.bilimiao.comm.proxy.ProxyHelper
 import com.a10miaomiao.bilimiao.comm.proxy.ProxyServerInfo
 import com.a10miaomiao.bilimiao.comm.utils.DebugMiao
 import com.a10miaomiao.bilimiao.page.setting.DanmakuSettingFragment
+import com.a10miaomiao.bilimiao.page.setting.ProxySettingFragment
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 
@@ -40,8 +41,10 @@ class AreaLimitBoxController(
     private fun initAreaLimitBox() {
         areaLimitOkBtn.setOnClickListener {
             val nav = activity.findNavController(com.a10miaomiao.bilimiao.R.id.nav_bottom_sheet_fragment)
-            val url = "bilimiao://setting/proxy/select"
-            nav.navigateToCompose(url)
+            nav.navigate(
+                ProxySettingFragment.actionId,
+                ProxySettingFragment.createArguments("select")
+            )
         }
         areaLimitCloseBtn.setOnClickListener {
             hide()

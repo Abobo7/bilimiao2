@@ -1,13 +1,11 @@
 package com.a10miaomiao.bilimiao.config
 
 import android.content.Context
-import android.graphics.Color
 import android.view.View
 import androidx.fragment.app.Fragment
 import com.a10miaomiao.bilimiao.R
 import com.a10miaomiao.bilimiao.comm.attr
 import splitties.dimensions.dip
-import splitties.views.dsl.core.matchParent
 
 class ViewConfig(val context: Context) {
     val containerWidth = context.dip(900)
@@ -28,7 +26,7 @@ class ViewConfig(val context: Context) {
     val colorSurfaceResource get() = context.attr(com.google.android.material.R.attr.colorSurface)
     val colorSurface get() = context.resources.getColor(colorSurfaceResource)
 
-    val themeColorResource get() = context.attr(android.R.attr.colorPrimary)
+    val themeColorResource get() = context.attr(androidx.appcompat.R.attr.colorPrimary)
     val themeColor get() = context.resources.getColor(themeColorResource)
 
     val windowBackgroundResource get() = context.attr(R.attr.defaultBackgroundColor)
@@ -41,12 +39,11 @@ class ViewConfig(val context: Context) {
     val foregroundColor get() = context.resources.getColor(foregroundColorResource)
     val foregroundAlpha45Color get() = (foregroundColor and 0x00FFFFFF) or 0x71000000
 
-
     val lineColorResource get() = context.attr(R.attr.lineColor)
     val lineColor get() = context.resources.getColor(lineColorResource)
 
-    val selectableItemBackground get() = context.attr(android.R.attr.selectableItemBackground)
-    val selectableItemBackgroundBorderless get() = context.attr(android.R.attr.selectableItemBackgroundBorderless)
+    val selectableItemBackground get() = context.attr(androidx.appcompat.R.attr.selectableItemBackground)
+    val selectableItemBackgroundBorderless get() = context.attr(androidx.appcompat.R.attr.selectableItemBackgroundBorderless)
 
     val appBarHeight get() = context.dip(70)
     val appBarTitleHeight get() = context.dip(20)
@@ -56,4 +53,3 @@ class ViewConfig(val context: Context) {
 inline val Context.config get() = ViewConfig(this)
 inline val Fragment.config get() = requireContext().config
 inline val View.config get() = context.config
-

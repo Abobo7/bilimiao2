@@ -44,7 +44,11 @@ public class Media3ExoPlayerManager extends BasePlayerManager {
     }
 
     protected ExoMediaPlayer buildMediaPlayer(Context context) {
-        return new ExoMediaPlayer(context);
+        ExoMediaPlayer exoMediaPlayer = new ExoMediaPlayer(context);
+        DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(context)
+                .setEnableDecoderFallback(true);
+        exoMediaPlayer.setRendererFactory(renderersFactory);
+        return exoMediaPlayer;
     }
 
     @Override
@@ -53,7 +57,11 @@ public class Media3ExoPlayerManager extends BasePlayerManager {
         mediaPlayer = buildMediaPlayer(context);
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         if (dummySurface == null) {
-            dummySurface = PlaceholderSurface.newInstanceV17(context, false);
+            try {
+                dummySurface = PlaceholderSurface.newInstanceV17(context, false);
+            } catch (Throwable ignored) {
+                dummySurface = null;
+            }
         }
         //使用自己的cache模式
         GSYModel gsyModel = (GSYModel) msg.obj;

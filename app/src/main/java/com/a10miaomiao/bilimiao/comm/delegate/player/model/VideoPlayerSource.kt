@@ -52,7 +52,7 @@ class VideoPlayerSource(
             val dash = res.dash
             if (dash != null) {
                 it.duration = dash.duration * 1000L
-                val dashSource = DashSource(res.quality, dash)
+                val dashSource = DashSource(res.quality, dash, uposHost, preferredCodec)
                 val dashVideo = dashSource.getDashVideo()!!
                 it.height = dashVideo.height
                 it.width = dashVideo.width
@@ -61,12 +61,20 @@ class VideoPlayerSource(
                 val durl = res.durl!!
                 if (durl.size == 1) {
                     it.duration = durl[0].length * 1000L
-                    it.url = durl[0].url
+                    it.url = if (uposHost.isNotBlank()) {
+                        com.a10miaomiao.bilimiao.comm.utils.UrlUtil.replaceHost(durl[0].url, uposHost)
+                    } else {
+                        durl[0].url
+                    }
                 } else {
                     var duration = 0L
                     it.url = "[concatenating]\n" + durl.joinToString("\n") { d ->
                         duration += d.length * 1000L
-                        d.url
+                        if (uposHost.isNotBlank()) {
+                            com.a10miaomiao.bilimiao.comm.utils.UrlUtil.replaceHost(d.url, uposHost)
+                        } else {
+                            d.url
+                        }
                     }
                     it.duration = duration
                 }
@@ -92,7 +100,7 @@ class VideoPlayerSource(
     private suspend fun getBiliDanmukuStream(): InputStream? {
         val res = BiliApiService.playerAPI.getDanmakuList(id)
             .awaitCall()
-        val body = res.body
+        val body = res.body()
         return if (body == null) {
             null
         } else {

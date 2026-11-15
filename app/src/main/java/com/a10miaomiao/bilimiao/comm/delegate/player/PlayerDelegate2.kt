@@ -50,10 +50,12 @@ import com.a10miaomiao.bilimiao.widget.comm.getScaffoldView
 import com.a10miaomiao.bilimiao.widget.player.DanmakuVideoPlayer
 import com.a10miaomiao.bilimiao.widget.player.media3.ExoMediaSourceInterceptListener
 import com.a10miaomiao.bilimiao.widget.player.media3.ExoSourceManager
-import com.a10miaomiao.bilimiao.widget.player.media3.Libgav1Media3ExoPlayerManager
+import com.a10miaomiao.bilimiao.widget.player.media3.KitKatOkHttpDataSource
 import com.a10miaomiao.bilimiao.widget.player.media3.Media3ExoPlayerManager
+import com.a10miaomiao.bilimiao.comm.proxy.ProxyHelper
 import com.kongzue.dialogx.dialogs.PopTip
 import com.shuyu.gsyvideoplayer.player.PlayerFactory
+import com.shuyu.gsyvideoplayer.player.SystemPlayerManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -187,11 +189,9 @@ class PlayerDelegate2(
             VideoSettingFragment.PLAYER_DECODER,
             VideoSettingFragment.DECODER_DEFAULT
         )
-        if (playerEngine == VideoSettingFragment.DECODER_AV1) {
-            // AV1
-            PlayerFactory.setPlayManager(Libgav1Media3ExoPlayerManager::class.java)
+        if (playerEngine == VideoSettingFragment.DECODER_SYSTEM) {
+            PlayerFactory.setPlayManager(SystemPlayerManager::class.java)
         } else {
-            // 默认
             PlayerFactory.setPlayManager(Media3ExoPlayerManager::class.java)
         }
         ExoSourceManager.setExoMediaSourceInterceptListener(this)
@@ -221,10 +221,7 @@ class PlayerDelegate2(
             }
             "[merging]" -> {
                 // 音视频分离
-                val dataSourceFactory = DefaultHttpDataSource.Factory()
-                val header = getDefaultRequestProperties()
-                dataSourceFactory.setUserAgent(DEFAULT_USER_AGENT)
-                dataSourceFactory.setDefaultRequestProperties(header)
+                val dataSourceFactory = createMediaHttpDataSourceFactory(getDefaultRequestProperties())
                 val videoMedia = MediaItem.fromUri(dataSourceArr[1])
                 val audioMedia = MediaItem.fromUri(dataSourceArr[2])
                 return MergingMediaSource(
@@ -236,10 +233,7 @@ class PlayerDelegate2(
             }
             "[concatenating]" -> {
                 // 视频拼接
-                val dataSourceFactory = DefaultHttpDataSource.Factory()
-                val header = getDefaultRequestProperties()
-                dataSourceFactory.setUserAgent(DEFAULT_USER_AGENT)
-                dataSourceFactory.setDefaultRequestProperties(header)
+                val dataSourceFactory = createMediaHttpDataSourceFactory(getDefaultRequestProperties())
                 return ConcatenatingMediaSource().apply {
                     for (i in 1 until dataSourceArr.size) {
                         addMediaSource(
@@ -251,10 +245,7 @@ class PlayerDelegate2(
             }
             "[dash-mpd]" -> {
                 // Create a data source factory.
-                val dataSourceFactory = DefaultHttpDataSource.Factory()
-                val header = getDefaultRequestProperties()
-                dataSourceFactory.setUserAgent(DEFAULT_USER_AGENT)
-                dataSourceFactory.setDefaultRequestProperties(header)
+                val dataSourceFactory = createMediaHttpDataSourceFactory(getDefaultRequestProperties())
                 // Create a DASH media source pointing to a DASH manifest uri.
                 val uri = Uri.parse(dataSourceArr[1])
                 val dashStr = dataSourceArr[2]
@@ -269,6 +260,33 @@ class PlayerDelegate2(
         return null
     }
 
+    @OptIn(markerClass = [UnstableApi::class])
+    private fun createMediaHttpDataSourceFactory(
+        headers: Map<String, String>,
+        userAgent: String = DEFAULT_USER_AGENT,
+        connectTimeoutMillis: Int = 15_000,
+        readTimeoutMillis: Int = 20_000,
+        allowCrossProtocolRedirects: Boolean = true,
+        listener: TransferListener? = null,
+    ): DataSource.Factory {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            return KitKatOkHttpDataSource.Factory(
+                userAgent = userAgent,
+                connectTimeoutMs = connectTimeoutMillis,
+                readTimeoutMs = readTimeoutMillis,
+                allowCrossProtocolRedirects = allowCrossProtocolRedirects,
+            ).setDefaultRequestProperties(headers)
+                .setTransferListener(listener)
+        }
+        return DefaultHttpDataSource.Factory()
+            .setAllowCrossProtocolRedirects(allowCrossProtocolRedirects)
+            .setConnectTimeoutMs(connectTimeoutMillis)
+            .setReadTimeoutMs(readTimeoutMillis)
+            .setUserAgent(userAgent)
+            .setDefaultRequestProperties(headers)
+            .setTransferListener(listener)
+    }
+
     override fun getHttpDataSourceFactory(
         userAgent: String,
         listener: TransferListener?,
@@ -277,6 +295,19 @@ class PlayerDelegate2(
         mapHeadData: Map<String, String>,
         allowCrossProtocolRedirects: Boolean
     ): DataSource.Factory? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            val mergedHeaders = HashMap<String, String>()
+            mergedHeaders.putAll(getDefaultRequestProperties())
+            mergedHeaders.putAll(mapHeadData)
+            return createMediaHttpDataSourceFactory(
+                headers = mergedHeaders,
+                userAgent = userAgent.ifBlank { DEFAULT_USER_AGENT },
+                connectTimeoutMillis = if (connectTimeoutMillis > 0) connectTimeoutMillis else 15_000,
+                readTimeoutMillis = if (readTimeoutMillis > 0) readTimeoutMillis else 20_000,
+                allowCrossProtocolRedirects = allowCrossProtocolRedirects,
+                listener = listener,
+            )
+        }
         return null
     }
 
@@ -341,13 +372,15 @@ class PlayerDelegate2(
                 val sourceInfo = source.getPlayerUrl(quality, fnval)
 //                DebugMiao.log("playerSourceInfo", sourceInfo.url)
                 withContext(Dispatchers.Main) {
-                    // 设置通知栏控制器
-                    PlayerService.selfInstance?.setPlayingInfo(
-                        source.title,
-                        source.ownerName,
-                        source.coverUrl,
-                        sourceInfo.duration
-                    )
+                    // 设置通知栏控制器（隔离通知/MediaSession异常，避免阻断视频播放）
+                    runCatching {
+                        PlayerService.selfInstance?.setPlayingInfo(
+                            source.title,
+                            source.ownerName,
+                            source.coverUrl,
+                            sourceInfo.duration
+                        )
+                    }.onFailure { it.printStackTrace() }
                     views.videoPlayer.releaseDanmaku()
                     views.videoPlayer.danmakuParser = danmukuParser
                     val header = getDefaultRequestProperties()
@@ -505,6 +538,13 @@ class PlayerDelegate2(
             return@let it
         }
         speed = prefs.getFloat("player_speed", 1f)
+        source.preferredCodec = prefs.getString(
+            VideoSettingFragment.PLAYER_CODEC,
+            VideoSettingFragment.CODEC_AVC
+        ) ?: VideoSettingFragment.CODEC_AVC
+        if (source.uposHost.isBlank()) {
+            source.uposHost = VideoSettingFragment.resolveUposHost(ProxyHelper.uposName(activity))
+        }
         scaffoldApp.showPlayer = true
         playerCoroutineScope.onStart()
         playerSource = source

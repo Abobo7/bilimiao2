@@ -18,6 +18,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
 import android.os.Build;
 import android.text.TextUtils;
@@ -1036,7 +1037,7 @@ public class ShadowLayout extends FrameLayout {
             } else {
                 float[] outerR = getCornerValue(trueHeight);
                 Path path = new Path();
-                path.addRoundRect(leftPadding, topPadding, getWidth() - rightPadding, getHeight() - bottomPadding, outerR, Path.Direction.CW);
+                path.addRoundRect(new RectF(leftPadding, topPadding, getWidth() - rightPadding, getHeight() - bottomPadding), outerR, Path.Direction.CW);
                 canvas.clipPath(path);
             }
 
@@ -1312,8 +1313,22 @@ public class ShadowLayout extends FrameLayout {
         }
 
         //contentDrawable实际是默认初始化时展示的；maskDrawable 控制了rippleDrawable的范围
-        RippleDrawable rippleDrawable = new RippleDrawable(colorStateList, contentDrawable, maskDrawable);
-        firstView.setBackground(rippleDrawable);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Api21RippleHelper.applyRipple(firstView, colorStateList, contentDrawable, maskDrawable);
+        } else {
+            StateListDrawable stateListDrawable = new StateListDrawable();
+            stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, maskDrawable);
+            stateListDrawable.addState(new int[]{}, contentDrawable);
+            firstView.setBackground(stateListDrawable);
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private static class Api21RippleHelper {
+        static void applyRipple(View target, ColorStateList colorStateList, Drawable contentDrawable, Drawable maskDrawable) {
+            RippleDrawable rippleDrawable = new RippleDrawable(colorStateList, contentDrawable, maskDrawable);
+            target.setBackground(rippleDrawable);
+        }
     }
 
 

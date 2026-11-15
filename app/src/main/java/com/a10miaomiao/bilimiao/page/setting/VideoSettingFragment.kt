@@ -6,10 +6,8 @@ import android.preference.PreferenceManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.coroutineScope
-import androidx.navigation.findNavController
 import androidx.navigation.fragment.FragmentNavigatorDestinationBuilder
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -19,22 +17,18 @@ import cn.a10miaomiao.miao.binding.android.view._rightPadding
 import cn.a10miaomiao.miao.binding.android.view._topPadding
 import cn.a10miaomiao.miao.binding.miaoEffect
 import cn.a10miaomiao.miao.binding.miaoMemo
-import com.a10miaomiao.bilimiao.MainNavGraph
-import com.a10miaomiao.bilimiao.R
 import com.a10miaomiao.bilimiao.comm.connectUi
 import com.a10miaomiao.bilimiao.comm.lazyUiDi
 import com.a10miaomiao.bilimiao.comm.miaoBindingUi
 import com.a10miaomiao.bilimiao.comm.mypage.MyPage
 import com.a10miaomiao.bilimiao.comm.mypage.myPageConfig
 import com.a10miaomiao.bilimiao.comm.navigation.FragmentNavigatorBuilder
-import com.a10miaomiao.bilimiao.comm.navigation.navigateToCompose
 import com.a10miaomiao.bilimiao.comm.recycler._miaoLayoutManage
-import com.a10miaomiao.bilimiao.comm.utils.DebugMiao
 import com.a10miaomiao.bilimiao.comm.views
 import com.a10miaomiao.bilimiao.store.WindowStore
-import com.a10miaomiao.bilimiao.widget.player.media3.Libgav1Media3ExoPlayerManager
 import com.a10miaomiao.bilimiao.widget.player.media3.Media3ExoPlayerManager
 import com.shuyu.gsyvideoplayer.player.PlayerFactory
+import com.shuyu.gsyvideoplayer.player.SystemPlayerManager
 import de.Maxr1998.modernpreferences.PreferencesAdapter
 import de.Maxr1998.modernpreferences.helpers.*
 import de.Maxr1998.modernpreferences.preferences.SwitchPreference
@@ -48,8 +42,8 @@ import splitties.views.dsl.core.lParams
 import splitties.views.dsl.core.matchParent
 import splitties.views.dsl.recyclerview.recyclerView
 
-class VideoSettingFragment : Fragment(), DIAware, MyPage
-    , SharedPreferences.OnSharedPreferenceChangeListener {
+class VideoSettingFragment : Fragment(), DIAware, MyPage,
+    SharedPreferences.OnSharedPreferenceChangeListener {
 
     companion object : FragmentNavigatorBuilder() {
         override val name = "setting.video"
@@ -58,6 +52,7 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage
         }
 
         const val PLAYER_DECODER = "player_decoder"
+        const val PLAYER_CODEC = "player_codec"
         const val PLAYER_FNVAL = "player_fnval"
         const val PLAYER_BACKGROUND = "player_background"
         const val PLAYER_PROXY = "player_proxy"
@@ -71,7 +66,11 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage
         const val PLAYER_AI_SUBTITLE_SHOW = "player_ai_subtitle_show"
 
         const val DECODER_DEFAULT = "default"
-        const val DECODER_AV1 = "AV1"
+        const val DECODER_SYSTEM = "system"
+
+        const val CODEC_AVC = "avc"
+        const val CODEC_HEVC = "hevc"
+        const val CODEC_AV1 = "av1"
 
         const val FNVAL_FLV = "2"
         const val FNVAL_MP4 = "2"
@@ -82,6 +81,10 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage
         const val KEY_LANDSCAPE = "LANDSCAPE"
         const val KEY_REVERSE_LANDSCAPE = "REVERSE_LANDSCAPE"
         const val KEY_UNSPECIFIED = "UNSPECIFIED"
+
+        fun resolveUposHost(uposName: String): String {
+            return ProxySettingFragment.UPOS_LIST.find { it.name == uposName }?.host.orEmpty()
+        }
     }
 
     override val pageConfig = myPageConfig {
@@ -141,11 +144,9 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage
                 }
                 notifyDataSetChanged()
             } else if (key == PLAYER_DECODER) {
-                if (sharedPreferences.getString(PLAYER_DECODER, DECODER_DEFAULT) == DECODER_AV1) {
-                    // AV1
-                    PlayerFactory.setPlayManager(Libgav1Media3ExoPlayerManager::class.java)
+                if (sharedPreferences.getString(PLAYER_DECODER, DECODER_DEFAULT) == DECODER_SYSTEM) {
+                    PlayerFactory.setPlayManager(SystemPlayerManager::class.java)
                 } else {
-                    // 默认
                     PlayerFactory.setPlayManager(Media3ExoPlayerManager::class.java)
                 }
             }
@@ -178,16 +179,27 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage
         collapseIcon = true
 
         categoryHeader("0") {
-            title = "播放器设置"
+            title = "播放器与解码设置"
         }
         val engineSelection = listOf(
-            SelectionItem(key = DECODER_DEFAULT, title = "默认"),
-            SelectionItem(key = DECODER_AV1, title = "AV1"),
+            SelectionItem(key = DECODER_DEFAULT, title = "Media3 ExoPlayer（推荐）"),
+            SelectionItem(key = DECODER_SYSTEM, title = "系统 MediaPlayer"),
         )
         singleChoice(PLAYER_DECODER, engineSelection) {
-            title = "解码器设置"
-            summary = "修改后重启播放器生效"
+            title = "播放器内核选择"
+            summary = "修改后下次播放生效"
             initialSelection = DECODER_DEFAULT
+        }
+
+        val codecSelection = listOf(
+            SelectionItem(key = CODEC_AVC, title = "AVC / H.264（默认，兼容老设备防绿屏）"),
+            SelectionItem(key = CODEC_HEVC, title = "HEVC / H.265"),
+            SelectionItem(key = CODEC_AV1, title = "AV1"),
+        )
+        singleChoice(PLAYER_CODEC, codecSelection) {
+            title = "DASH 视频首选编码"
+            summary = "Android 4.4 设备强烈建议保持 AVC / H.264"
+            initialSelection = CODEC_AVC
         }
 
         categoryHeader("1") {
@@ -195,9 +207,8 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage
         }
 
         val fnvalSelection = listOf(
-            SelectionItem(key = FNVAL_DASH, title = "dash(支持4K)"),
-            SelectionItem(key = FNVAL_MP4, title = "mp4(不支持2K及以上)"),
-//            SelectionItem(key = FNVAL_FLV, title = "flv(不支持2K及以上)"),
+            SelectionItem(key = FNVAL_DASH, title = "dash(支持1080P60/4K)"),
+            SelectionItem(key = FNVAL_MP4, title = "mp4(兼容单流模式)"),
         )
         singleChoice(PLAYER_FNVAL, fnvalSelection) {
             title = "视频获取方式选择(视频格式)"
@@ -206,13 +217,14 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage
         }
 
         pref(PLAYER_PROXY) {
-            title = "区域限制设置"
-            summary = "滴，出差卡"
+            title = "区域限制与 UPOS 节点设置"
+            summary = "配置自定义代理服务器与视频 CDN 线路"
 
             onClick {
-                val nav = findNavController()
-                val url = "bilimiao://setting/proxy"
-                nav.navigateToCompose(url)
+                findNavController().navigate(
+                    ProxySettingFragment.actionId,
+                    ProxySettingFragment.createArguments("manage")
+                )
                 true
             }
         }
@@ -281,8 +293,5 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage
             summaryDisabled = "字幕功能已关闭"
             defaultValue = false
         }
-
-
     }
-
 }

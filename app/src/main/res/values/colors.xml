@@ -90,4 +90,9 @@
     <color name="nightColorPrimary">#3b3b3b</color>
     <color name="nightColorPrimaryDark">#383838</color>
     <color name="nightColorAccent">#fb7299</color>
+
+    <color name="kitkat_block_bg">@color/blockBackgroundColor</color>
+    <color name="kitkat_window_bg">@color/windowBackgroundColor</color>
+    <color name="kitkat_fg">@color/foregroundColor</color>
+    <color name="kitkat_control_normal">#8A000000</color>
 </resources>

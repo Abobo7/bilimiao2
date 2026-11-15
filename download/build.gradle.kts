@@ -1,36 +1,21 @@
-import cn.a10miaomiao.bilimiao.build.*
-
 plugins {
     id("com.android.library")
-    id("kotlin-android")
-    id("kotlin-parcelize")
-    id("bilimiao-build")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.parcelize")
 }
 
 android {
-    compileSdk = 32
+    namespace = "cn.a10miaomiao.download"
+    compileSdk = 35
 
     defaultConfig {
-        minSdk = 21
-        targetSdk = 32
-
-        version = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        minSdk = 19
+        multiDexEnabled = true
         consumerProguardFiles("consumer-rules.pro")
     }
 
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -41,17 +26,17 @@ android {
 }
 
 dependencies {
-    implementation(Libraries.core)
-    implementation(Libraries.appcompat)
-    implementation(Libraries.material)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
-    //TODO: 弃用RXJAVA，改用kotlin协程
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.6.1")
+
     implementation("io.reactivex.rxjava2:rxandroid:2.0.2")
     implementation("io.reactivex.rxjava2:rxjava:2.0.2")
-    implementation(Libraries.gson)
-    implementation(Libraries.okhttp3)
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.okhttp3:okhttp:3.12.13")
+    implementation(project(":bilimiao-comm"))
 
-    testImplementation(Libraries.junit)
-    androidTestImplementation(Libraries.androidxJunit)
-    androidTestImplementation(Libraries.espresso)
+    testImplementation("junit:junit:4.13.2")
 }

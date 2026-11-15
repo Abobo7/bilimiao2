@@ -1,0 +1,13 @@
+-keep class androidx.multidex.** { *; }
+-keep class com.a10miaomiao.bilimiao.Bilimiao { *; }
+-keep class com.a10miaomiao.bilimiao.Bilimiao$* { *; }
+-keep class com.a10miaomiao.bilimiao.AppCrashHandler { *; }
+-keep class com.a10miaomiao.bilimiao.comm.BilimiaoCommApp { *; }
+-keep class com.a10miaomiao.bilimiao.comm.BilimiaoCommApp$* { *; }
+-keep class com.a10miaomiao.bilimiao.comm.network.KitKatTlsHelper { *; }
+-keep class com.a10miaomiao.bilimiao.comm.network.KitKatTlsHelper$* { *; }
+-keep class com.kongzue.dialogx.dialogs.PopTip { *; }
+-keep class com.kongzue.dialogx.dialogs.PopTip$* { *; }
+-keep class androidx.media.session.MediaButtonReceiver { *; }
+-keep class com.a10miaomiao.bilimiao.service.** { *; }
+
