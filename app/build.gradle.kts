@@ -113,12 +113,13 @@ dependencies {
     implementation("org.kodein.di:kodein-di-framework-android-x:7.12.0")
 
     implementation("androidx.recyclerview:recyclerview:1.2.1")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.github.CymChad:BaseRecyclerViewAdapterHelper:3.0.4")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("com.google.android.flexbox:flexbox:3.0.0")
     implementation("me.zhanghai.android.foregroundcompat:library:1.0.2")
     implementation("com.drakeet.drawer:drawer:1.0.3")
-    implementation("de.maxr1998:modernandroidpreferences:2.2.0")
+    implementation(files("libs/modernandroidpreferences-2.2.0-kitkat.aar"))
 
     // Splitties View DSL
     val splittiesVersion = "3.0.0-beta06"

@@ -165,8 +165,7 @@ class PlayerController(
             fbDanmakuVisibility = danmakuFBShow
             r2LDanmakuVisibility = danmakuR2LShow
             specialDanmakuVisibility = danmakuSpecialShow
-//            setDanmakuStyle(IDisplayer.DANMAKU_STYLE_STROKEN, 3f)
-//            isDuplicateMergingEnabled = false
+            isDuplicateMergingEnabled = true
             setScrollSpeedFactor(danmakuSpeed)
             setScaleTextSize(scaleTextSize)
             setMaximumLines(maxLinesPair)

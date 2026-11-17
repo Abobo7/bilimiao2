@@ -56,6 +56,7 @@ import com.a10miaomiao.bilimiao.comm.proxy.ProxyHelper
 import com.kongzue.dialogx.dialogs.PopTip
 import com.shuyu.gsyvideoplayer.player.PlayerFactory
 import com.shuyu.gsyvideoplayer.player.SystemPlayerManager
+import com.shuyu.gsyvideoplayer.utils.GSYVideoType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -194,6 +195,13 @@ class PlayerDelegate2(
         } else {
             PlayerFactory.setPlayManager(Media3ExoPlayerManager::class.java)
         }
+        val renderView = prefs.getString(
+            VideoSettingFragment.PLAYER_RENDER_VIEW,
+            VideoSettingFragment.RENDER_SURFACE
+        )
+        GSYVideoType.setRenderType(
+            if (renderView == VideoSettingFragment.RENDER_TEXTURE) GSYVideoType.TEXTURE else GSYVideoType.SUFRACE
+        )
         ExoSourceManager.setExoMediaSourceInterceptListener(this)
     }
 

@@ -29,6 +29,7 @@ import com.a10miaomiao.bilimiao.store.WindowStore
 import com.a10miaomiao.bilimiao.widget.player.media3.Media3ExoPlayerManager
 import com.shuyu.gsyvideoplayer.player.PlayerFactory
 import com.shuyu.gsyvideoplayer.player.SystemPlayerManager
+import com.shuyu.gsyvideoplayer.utils.GSYVideoType
 import de.Maxr1998.modernpreferences.PreferencesAdapter
 import de.Maxr1998.modernpreferences.helpers.*
 import de.Maxr1998.modernpreferences.preferences.SwitchPreference
@@ -52,6 +53,7 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage,
         }
 
         const val PLAYER_DECODER = "player_decoder"
+        const val PLAYER_RENDER_VIEW = "player_render_view"
         const val PLAYER_CODEC = "player_codec"
         const val PLAYER_FNVAL = "player_fnval"
         const val PLAYER_BACKGROUND = "player_background"
@@ -67,6 +69,9 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage,
 
         const val DECODER_DEFAULT = "default"
         const val DECODER_SYSTEM = "system"
+
+        const val RENDER_SURFACE = "surface"
+        const val RENDER_TEXTURE = "texture"
 
         const val CODEC_AVC = "avc"
         const val CODEC_HEVC = "hevc"
@@ -149,6 +154,11 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage,
                 } else {
                     PlayerFactory.setPlayManager(Media3ExoPlayerManager::class.java)
                 }
+            } else if (key == PLAYER_RENDER_VIEW) {
+                val renderView = sharedPreferences.getString(PLAYER_RENDER_VIEW, RENDER_SURFACE)
+                GSYVideoType.setRenderType(
+                    if (renderView == RENDER_TEXTURE) GSYVideoType.TEXTURE else GSYVideoType.SUFRACE
+                )
             }
         }
     }
@@ -189,6 +199,16 @@ class VideoSettingFragment : Fragment(), DIAware, MyPage,
             title = "播放器内核选择"
             summary = "修改后下次播放生效"
             initialSelection = DECODER_DEFAULT
+        }
+
+        val renderSelection = listOf(
+            SelectionItem(key = RENDER_SURFACE, title = "SurfaceView 硬件叠加层（推荐，高倍速更流畅）"),
+            SelectionItem(key = RENDER_TEXTURE, title = "TextureView 纹理视图"),
+        )
+        singleChoice(PLAYER_RENDER_VIEW, renderSelection) {
+            title = "视频渲染视图"
+            summary = "老平板建议使用 SurfaceView 降低高分屏倍速播放 GPU 合成开销"
+            initialSelection = RENDER_SURFACE
         }
 
         val codecSelection = listOf(

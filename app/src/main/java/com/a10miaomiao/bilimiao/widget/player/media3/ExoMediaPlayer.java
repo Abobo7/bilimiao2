@@ -372,7 +372,6 @@ public class ExoMediaPlayer extends AbstractMediaPlayer implements Player.Listen
                         if (mTrackSelector == null) {
                             mTrackSelector = new DefaultTrackSelector(mAppContext);
                         }
-                        mEventLogger = new EventLogger();
                         boolean preferExtensionDecoders = true;
                         boolean useExtensionRenderers = true;//是否开启扩展
                         @DefaultRenderersFactory.ExtensionRendererMode int extensionRendererMode = useExtensionRenderers
@@ -382,17 +381,25 @@ public class ExoMediaPlayer extends AbstractMediaPlayer implements Player.Listen
                         if (mRendererFactory == null) {
                             mRendererFactory = new DefaultRenderersFactory(mAppContext);
                             mRendererFactory.setExtensionRendererMode(extensionRendererMode);
+                            mRendererFactory.setEnableDecoderFallback(true);
                         }
                         if (mLoadControl == null) {
-                            mLoadControl = new DefaultLoadControl();
+                            mLoadControl = new DefaultLoadControl.Builder()
+                                    .setBufferDurationsMs(
+                                            25_000,
+                                            60_000,
+                                            1_500,
+                                            3_000
+                                    )
+                                    .build();
                         }
                         mInternalPlayer = new ExoPlayer.Builder(mAppContext, mRendererFactory)
                                 .setLooper(Looper.myLooper())
                                 .setTrackSelector(mTrackSelector)
                                 .setLoadControl(mLoadControl).build();
+                        mInternalPlayer.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT);
                         mInternalPlayer.addListener(ExoMediaPlayer.this);
                         mInternalPlayer.addAnalyticsListener(ExoMediaPlayer.this);
-                        mInternalPlayer.addAnalyticsListener(mEventLogger);
                         if (mSpeedPlaybackParameters != null) {
                             mInternalPlayer.setPlaybackParameters(mSpeedPlaybackParameters);
                         }

@@ -6,6 +6,8 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
+import android.os.Looper
+import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.*
 import android.widget.ImageView
@@ -112,19 +114,59 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
     private val mSpeedTipsIV: ImageView by lazy { findViewById(R.id.speed_tips_icon) }
 
 
-    // 弹幕时间与播放器时间同步
-    private val mDanmakuTime = object : DanmakuTimer() {
-        private var lastTime = 0L
-        override fun currMillisecond(): Long {
-            return try {
-                gsyVideoManager.currentPosition
-            } catch (e: Exception) {
-                0L
+    // 无锁单调弹幕时钟锚点：避免 DanmakuFlameMaster 后台绘制/缓存线程跨线程调用 ExoPlayer.getCurrentPosition()
+    // 触发高频 IllegalStateException 栈分配与 0L 返回导致的弹幕缓存反复重建及二倍速卡顿
+    @Volatile
+    private var danmakuAnchorPosMs = 0L
+
+    @Volatile
+    private var danmakuAnchorElapsedMs = SystemClock.elapsedRealtime()
+
+    @Volatile
+    private var danmakuSpeed = 1f
+
+    @Volatile
+    private var danmakuPlaying = false
+
+    private fun computeDanmakuPositionMs(): Long {
+        val base = danmakuAnchorPosMs
+        if (!danmakuPlaying) return base
+        val elapsed = (SystemClock.elapsedRealtime() - danmakuAnchorElapsedMs).coerceAtLeast(0L)
+        return base + (elapsed * danmakuSpeed).toLong()
+    }
+
+    private fun syncDanmakuClock(
+        explicitPositionMs: Long? = null,
+        playing: Boolean = (mCurrentState == CURRENT_STATE_PLAYING),
+    ) {
+        val now = SystemClock.elapsedRealtime()
+        val pos = when {
+            explicitPositionMs != null -> explicitPositionMs
+            Looper.myLooper() == Looper.getMainLooper() -> {
+                try {
+                    gsyVideoManager.currentPosition.coerceAtLeast(0L)
+                } catch (_: Exception) {
+                    computeDanmakuPositionMs()
+                }
             }
+            else -> computeDanmakuPositionMs()
+        }
+        danmakuAnchorPosMs = pos
+        danmakuAnchorElapsedMs = now
+        danmakuPlaying = playing
+    }
+
+    // 弹幕时间与播放器时间同步（任意线程 O(1) 无锁读取，零异常分配）
+    private val mDanmakuTime = object : DanmakuTimer() {
+        override fun currMillisecond(): Long {
+            val pos = computeDanmakuPositionMs()
+            currMillisecond = pos
+            return pos
         }
 
         override fun update(curr: Long): Long {
-            lastInterval = curr - lastTime
+            lastInterval = curr - currMillisecond
+            currMillisecond = curr
             return lastInterval
         }
     }
@@ -324,10 +366,12 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
     // start 长按倍速播放
     private var touchSurfaceDownTime = Long.MAX_VALUE
     private var isSpeedPlaying = false
+    private var preLongPressSpeed = 1f
     private val longClickControlTask = Runnable {
         if (System.currentTimeMillis() - touchSurfaceDownTime >= 500
             && mCurrentState == CURRENT_STATE_PLAYING
             && !mChangePosition && !mChangeVolume && !mBrightness) {
+            preLongPressSpeed = speed
             isSpeedPlaying = true
             speed = 2f
             mSpeedTips.visibility = View.VISIBLE
@@ -355,7 +399,7 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
         if (isSpeedPlaying) {
             mSpeedTips.visibility = View.GONE
             isSpeedPlaying = false
-            speed = 1f
+            speed = preLongPressSpeed
             (mSpeedTipsIV.drawable as? AnimationDrawable)?.stop()
         } else {
             super.touchSurfaceUp()
@@ -363,16 +407,21 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
     }
     // end
 
-//    override fun setProgressAndTime(
-//        progress: Long,
-//        secProgress: Long,
-//        currentTime: Long,
-//        totalTime: Long,
-//        forceChange: Boolean
-//    ) {
-//        super.setProgressAndTime(progress, secProgress, currentTime, totalTime, forceChange)
-//        setBottomSubtitleText(currentTime)
-//    }
+    override fun setProgressAndTime(
+        progress: Long,
+        secProgress: Long,
+        currentTime: Long,
+        totalTime: Long,
+        forceChange: Boolean
+    ) {
+        super.setProgressAndTime(progress, secProgress, currentTime, totalTime, forceChange)
+        if (mCurrentState == CURRENT_STATE_PLAYING && currentTime >= 0L) {
+            val est = computeDanmakuPositionMs()
+            if (kotlin.math.abs(est - currentTime) > 80L) {
+                syncDanmakuClock(explicitPositionMs = currentTime, playing = true)
+            }
+        }
+    }
 
     override fun startProgressTimer() {
         super.startProgressTimer()
@@ -433,6 +482,7 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
 
     override fun setStateAndUi(state: Int) {
         super.setStateAndUi(state)
+        syncDanmakuClock(playing = (state == CURRENT_STATE_PLAYING))
         val playBtnImageRes = if (state == CURRENT_STATE_PLAYING) {
             R.drawable.bili_player_play_can_pause
         } else {
@@ -469,8 +519,16 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
 
     override fun onPrepared() {
         super.onPrepared()
+        syncDanmakuClock(playing = (mCurrentState == CURRENT_STATE_PLAYING))
         onPrepareDanmaku(this)
         videoPlayerCallBack?.onPrepared()
+    }
+
+    override fun onSeekComplete() {
+        super.onSeekComplete()
+        val pos = currentPositionWhenPlaying
+        syncDanmakuClock(explicitPositionMs = pos, playing = (mCurrentState == CURRENT_STATE_PLAYING))
+        resolveDanmakuSeek(this, pos)
     }
 
     override fun onAutoCompletion() {
@@ -482,12 +540,14 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
 
     override fun onVideoPause() {
         super.onVideoPause()
+        syncDanmakuClock(playing = false)
         danmakuOnPause()
         videoPlayerCallBack?.onVideoPause()
     }
 
     override fun onVideoResume(isResume: Boolean) {
         super.onVideoResume(isResume)
+        syncDanmakuClock(playing = (mCurrentState == CURRENT_STATE_PLAYING))
         danmakuOnResume()
         videoPlayerCallBack?.onVideoResume(isResume)
     }
@@ -634,6 +694,8 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
     }
 
     override fun setSpeed(speed: Float, soundTouch: Boolean) {
+        syncDanmakuClock(playing = (mCurrentState == CURRENT_STATE_PLAYING))
+        danmakuSpeed = speed.coerceAtLeast(0.1f)
         super.setSpeed(speed, soundTouch)
         mPlaySpeedValue.text = "x$speed"
     }

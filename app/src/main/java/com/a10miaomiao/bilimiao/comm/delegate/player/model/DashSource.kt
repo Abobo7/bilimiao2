@@ -47,12 +47,13 @@ class DashSource(
         video: PlayerAPI.DashItem = getDashVideo()!!
     ): String {
         val audio = getDashAudio()
+        val frameRateAttr = if (video.frame_rate.isNotBlank()) """ frameRate="${video.frame_rate}"""" else ""
         val mpdStr = """
 <MPD xmlns="urn:mpeg:DASH:schema:MPD:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static" mediaPresentationDuration="PT${dashData.duration}S" minBufferTime="PT${dashData.min_buffer_time}S">
     <Period start="PT0S">
         <AdaptationSet>
             <ContentComponent contentType="video" id="1" />
-            <Representation bandwidth="${video.bandwidth}" codecs="${video.codecs}" height="${video.height}" id="${video.id}" mimeType="${video.mime_type}" width="${video.width}">
+            <Representation bandwidth="${video.bandwidth}" codecs="${video.codecs}" height="${video.height}" id="${video.id}" mimeType="${video.mime_type}" width="${video.width}"$frameRateAttr>
                 <BaseURL></BaseURL>
                 <SegmentBase indexRange="${video.segment_base.index_range}">
                     <Initialization range="${video.segment_base.initialization}" />
