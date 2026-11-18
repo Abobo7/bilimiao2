@@ -408,7 +408,7 @@ public class DrawHandler extends Handler {
         } else if (mRenderingState.nothingRendered && mIdleSleep) {
             long dTime = mRenderingState.endTime - timer.currMillisecond();
             if (dTime > 500) {
-                waitRendering(dTime - 10);
+                waitRendering(Math.min(dTime - 10, 400));
                 return;
             }
         }
@@ -454,7 +454,7 @@ public class DrawHandler extends Handler {
                         dTime = mRenderingState.endTime - timer.currMillisecond();
                         if (dTime > 500) {
                             notifyRendering();
-                            waitRendering(dTime - 10);
+                            waitRendering(Math.min(dTime - 10, 400));
                         }
                     }
                 }
@@ -495,7 +495,7 @@ public class DrawHandler extends Handler {
         } else if (mRenderingState.nothingRendered && mIdleSleep) {
             long dTime = mRenderingState.endTime - timer.currMillisecond();
             if (dTime > 500) {
-                waitRendering(dTime - 10);
+                waitRendering(Math.min(dTime - 10, 400));
                 return;
             }
         }
@@ -521,10 +521,19 @@ public class DrawHandler extends Handler {
                 mCallback.updateTimer(timer);
             }
         } else {
-            long gapTime = time - timer.currMillisecond();
+            long currTime = timer.currMillisecond();
+            long gapTime = time - currTime;
             long averageTime = Math.max(mFrameUpdateRate, getAverageRenderingTime());
-            if (gapTime > 2000 || mRenderingState.consumingTime > mCordonTime || averageTime > mCordonTime) {
-                d = gapTime;
+            if (gapTime < -500) {
+                // 外部播放器时钟超前（如 1.5x/2.0x 倍速或快进）时，重锚定 mTimeBase，防止 d < 0 导致 Choreographer 永久跳过渲染
+                mTimeBase = startMS - currTime;
+                mRemainingTime = 0;
+                d = mFrameUpdateRate;
+            } else if (gapTime > 2000 || mRenderingState.consumingTime > mCordonTime || averageTime > mCordonTime) {
+                d = Math.max(mFrameUpdateRate, gapTime);
+                if (gapTime < 0) {
+                    mTimeBase = startMS - currTime;
+                }
                 gapTime = 0;
             } else {
                 d = averageTime + gapTime / mFrameUpdateRate;

@@ -56,6 +56,10 @@ public class CacheManagingDrawTask extends DrawTask {
         super(timer, config, taskListener);
         NativeBitmapFactory.loadLibs();
         mMaxCacheSize = (int) Math.max(1024 * 1024 * 4, Runtime.getRuntime().maxMemory() * config.cachingPolicy.maxCachePoolSizeFactorPercentage);
+        if (android.os.Build.VERSION.SDK_INT < 21) {
+            // Android 4.4 Dalvik 下无 libndkbitmap.so 时位图分配在 Dalvik Heap 中，限制缓存池上限为 16MB 防止触发高频 GC_FOR_ALLOC 卡顿
+            mMaxCacheSize = Math.min(mMaxCacheSize, 16 * 1024 * 1024);
+        }
         mCacheManager = new CacheManager(mMaxCacheSize, MAX_CACHE_SCREEN_SIZE);
         mRenderer.setCacheManager(mCacheManager);
     }

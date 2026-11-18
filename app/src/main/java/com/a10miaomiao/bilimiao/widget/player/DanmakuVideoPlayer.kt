@@ -538,6 +538,17 @@ class DanmakuVideoPlayer : StandardGSYVideoPlayer {
         DebugMiao.log("onAutoCompletion")
     }
 
+    override fun onInfo(what: Int, extra: Int) {
+        super.onInfo(what, extra)
+        if (what == 701) { // MEDIA_INFO_BUFFERING_START
+            syncDanmakuClock(playing = false)
+            danmakuOnPause()
+        } else if (what == 702) { // MEDIA_INFO_BUFFERING_END
+            syncDanmakuClock(playing = (mCurrentState == CURRENT_STATE_PLAYING))
+            danmakuOnResume()
+        }
+    }
+
     override fun onVideoPause() {
         super.onVideoPause()
         syncDanmakuClock(playing = false)
